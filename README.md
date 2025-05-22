@@ -16,14 +16,14 @@ Bloodpebble is a lightweight alternative to [Bloodstone](https://github.com/deca
 Bloodpebble supports the following configuration settings, available in `BepInEx/config/Bloodpebble.cfg`.
 
 **Client/Server Options:**
-- `EnableReloading` [default `false`]: Whether the reloading feature is enabled.
 - `ReloadablePluginsFolder` [default `BepInEx/BloodpebblePlugins`]: The path to the directory where reloadable plugins should be searched. Relative to the game directory.
 
 **Client Options:**
 - The keybinding to reload is F6. Not currently configurable.
 
 **Server Options:**
-- `ReloadCommand` [default `!reload`]: Which text command (sent in chat) should be used to trigger reloading of plugins.
+- `ReloadCommand` [default `!reload`]: Which text command (sent in chat) should be used to trigger reloading of plugins.\
+User must first be AdminAuth'd (accomplished via console command).
 
 ### Support
 
