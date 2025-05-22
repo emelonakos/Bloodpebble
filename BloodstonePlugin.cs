@@ -45,7 +45,6 @@ namespace Bloodstone
 
             Hooks.OnInitialize.Initialize();
             Hooks.GameFrame.Initialize();
-            Network.SerializationHooks.Initialize();
 
             Logger.LogInfo($"Bloodstone v{MyPluginInfo.PLUGIN_VERSION} loaded.");
 
@@ -72,7 +71,6 @@ namespace Bloodstone
 
             Hooks.OnInitialize.Uninitialize();
             Hooks.GameFrame.Uninitialize();
-            Network.SerializationHooks.Uninitialize();
 
             return true;
         }
