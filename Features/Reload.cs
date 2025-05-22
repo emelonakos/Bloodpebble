@@ -94,7 +94,7 @@ public static class Reload
     {
         if (!Directory.Exists(_reloadPluginsFolder))
         {
-            Directory.CreateDirectory(_reloadPluginsFolder); 
+            Directory.CreateDirectory(_reloadPluginsFolder);
         }
         return Directory.GetFiles(_reloadPluginsFolder, "*.dll").SelectMany(LoadPlugin).ToList();
     }
@@ -113,9 +113,32 @@ public static class Reload
         using var ms = new MemoryStream();
         dll.Write(ms);
 
-        var loaded = new List<string>();
-
         var assembly = Assembly.Load(ms.ToArray());
+
+        var canPluginsDependOnOtherPlugins = false;
+        if (canPluginsDependOnOtherPlugins)
+            return LoadPluginsFromAssemblyTheWayScriptEngineDoesIt(assembly);
+        else
+            return LoadPluginsFromAssemblyTheWayBloodstoneDoesIt(assembly);
+    }
+
+    private class ReloadBehaviour : UnityEngine.MonoBehaviour
+    {
+        private void Update()
+        {
+            if (UnityEngine.Input.GetKeyDown(_keybinding))
+            {
+                BloodstonePlugin.Logger.LogInfo("Reloading client plugins...");
+
+                UnloadPlugins();
+                LoadPlugins();
+            }
+        }
+    }
+
+    private static List<string> LoadPluginsFromAssemblyTheWayBloodstoneDoesIt(Assembly assembly)
+    {
+        var loaded = new List<string>();
         foreach (var pluginType in assembly.GetTypes().Where(x => typeof(BasePlugin).IsAssignableFrom(x)))
         {
             // skip plugins already loaded
@@ -144,21 +167,15 @@ public static class Reload
                 BloodstonePlugin.Logger.LogError(ex);
             }
         }
-
         return loaded;
     }
 
-    private class ReloadBehaviour : UnityEngine.MonoBehaviour
+    // see the ScriptEngine tool from https://github.com/BepInEx/BepInEx.Debug
+    private static List<string> LoadPluginsFromAssemblyTheWayScriptEngineDoesIt(Assembly assembly)
     {
-        private void Update()
-        {
-            if (UnityEngine.Input.GetKeyDown(_keybinding))
-            {
-                BloodstonePlugin.Logger.LogInfo("Reloading client plugins...");
-
-                UnloadPlugins();
-                LoadPlugins();
-            }
-        }
+        var loaded = new List<string>();
+        // TODO: implement
+        return loaded;
     }
+    
 }
