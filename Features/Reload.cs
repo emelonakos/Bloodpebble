@@ -17,8 +17,9 @@ public static class Reload
     private static string _reloadCommand;
     private static string _reloadPluginsFolder;
     private static ReloadBehaviour _clientBehavior;
-    private static Keybinding _clientReloadKeybinding;
 #nullable enable
+
+    private static KeyCode _keybinding = KeyCode.F6;
 
     /// <summary>
     /// Contains the list of all plugins that are loaded and support reloading
@@ -36,13 +37,6 @@ public static class Reload
 
         if (VWorld.IsClient)
         {
-            _clientReloadKeybinding = KeybindManager.Register(new()
-            {
-                Id = "gg.deca.Bloodstone.reload",
-                Category = "Bloodstone",
-                Name = "Reload Plugins",
-                DefaultKeybinding = KeyCode.F6,
-            });
             _clientBehavior = BloodstonePlugin.Instance.AddComponent<ReloadBehaviour>();
         }
 
@@ -163,7 +157,7 @@ public static class Reload
     {
         private void Update()
         {
-            if (_clientReloadKeybinding.IsPressed)
+            if (UnityEngine.Input.GetKeyDown(_keybinding))
             {
                 BloodstonePlugin.Logger.LogInfo("Reloading client plugins...");
 

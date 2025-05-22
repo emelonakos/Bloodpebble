@@ -19,7 +19,7 @@ Bloodstone supports the following configuration settings, available in `BepInEx/
 - `ReloadablePluginsFolder` [default `BepInEx/BloodstonePlugins`]: The path to the directory where reloadable plugins should be searched. Relative to the game directory.
 
 **Client Options:**
-- Bloodstone keybinding can be configured through the in-game settings screen.
+- The keybinding to reload is F6. Not currently configurable.
 
 **Server Options:**
 - `ReloadCommand` [default `!reload`]: Which text command (sent in chat) should be used to trigger reloading of plugins.
@@ -29,11 +29,3 @@ Bloodstone supports the following configuration settings, available in `BepInEx/
 Join the [modding community](https://vrisingmods.com/discord), and ping `@deca#9999`.
 
 Post an issue on the [GitHub repository](https://github.com/decaprime/Bloodstone). 
-
-### Changelog
-
-- 0.2.2:
-    - Exposed LoadedPlugins in public API
-- 0.2.1: Initial release for V Rising 1.0
-    - Note: **Partial functionality** no clientside Keybinds or CustomNetworkEvent support yet.
-    - See https://github.com/decaprime/Bloodstone/pull/6 for more details

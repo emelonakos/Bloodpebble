@@ -37,12 +37,6 @@ namespace Bloodstone
                 Hooks.Chat.Initialize();
             }
 
-            if (VWorld.IsClient)
-            {
-                API.KeybindManager.Load();
-                // Hooks.Keybindings.Initialize();
-            }
-
             Hooks.OnInitialize.Initialize();
 
             Logger.LogInfo($"Bloodstone v{MyPluginInfo.PLUGIN_VERSION} loaded.");
@@ -60,12 +54,6 @@ namespace Bloodstone
             if (VWorld.IsServer)
             {
                 Hooks.Chat.Uninitialize();
-            }
-
-            if (VWorld.IsClient)
-            {
-                API.KeybindManager.Save();
-                Hooks.Keybindings.Uninitialize();
             }
 
             Hooks.OnInitialize.Uninitialize();
