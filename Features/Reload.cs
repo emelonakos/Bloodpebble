@@ -92,8 +92,10 @@ public static class Reload
 
     private static List<string> LoadPlugins()
     {
-        if (!Directory.Exists(_reloadPluginsFolder)) return new();
-
+        if (!Directory.Exists(_reloadPluginsFolder))
+        {
+            Directory.CreateDirectory(_reloadPluginsFolder); 
+        }
         return Directory.GetFiles(_reloadPluginsFolder, "*.dll").SelectMany(LoadPlugin).ToList();
     }
 
