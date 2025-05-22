@@ -116,13 +116,6 @@ public static class Reload
         var assembly = Assembly.Load(ms.ToArray());
         foreach (var pluginType in assembly.GetTypes().Where(x => typeof(BasePlugin).IsAssignableFrom(x)))
         {
-            // skip plugins not marked as reloadable
-            if (!pluginType.GetCustomAttributes<ReloadableAttribute>().Any())
-            {
-                BloodstonePlugin.Logger.LogWarning($"Plugin {pluginType.FullName} is not marked as reloadable, skipping...");
-                continue;
-            }
-
             // skip plugins already loaded
             if (LoadedPlugins.Any(x => x.GetType() == pluginType)) continue;
 
