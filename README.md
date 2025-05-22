@@ -1,10 +1,32 @@
 
-# Bloodstone
+# Bloodpebble
 
-![bloodstone-banner](https://i.imgur.com/Py0MwUL.png)
+![bloodpebble-banner](bloodpebble-banner.png)
 
-Bloodstone is the successor to Wetstone after Gloomrot.
+Bloodpebble is a lightweight alternative to [Bloodstone](https://github.com/decaprime/Bloodstone). It allows reloading plugins without restarting the game.
 
----
+### Installation
 
-Bloodstone is licensed under an [MIT license](./LICENSE).
+- Install [BepInEx](https://v-rising.thunderstore.io/package/BepInEx/BepInExPack_V_Rising/).
+- Extract _Bloodpebble.dll_ into _`(VRising folder)/BepInEx/plugins`_.
+- Optional: extract any reloadable additional plugins into _`(VRising folder)/BepInEx/BloodpebblePlugins`_.
+
+### Configuration
+
+Bloodpebble supports the following configuration settings, available in `BepInEx/config/Bloodpebble.cfg`.
+
+**Client/Server Options:**
+- `EnableReloading` [default `false`]: Whether the reloading feature is enabled.
+- `ReloadablePluginsFolder` [default `BepInEx/BloodpebblePlugins`]: The path to the directory where reloadable plugins should be searched. Relative to the game directory.
+
+**Client Options:**
+- The keybinding to reload is F6. Not currently configurable.
+
+**Server Options:**
+- `ReloadCommand` [default `!reload`]: Which text command (sent in chat) should be used to trigger reloading of plugins.
+
+### Support
+
+Join the [modding community](https://vrisingmods.com/discord).
+
+Post an issue on the [GitHub repository](https://github.com/cheesasaurus/Bloodpebble). 

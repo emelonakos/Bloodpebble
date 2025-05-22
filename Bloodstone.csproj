@@ -1,28 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>Bloodstone</AssemblyName>
+    <AssemblyName>Bloodpebble</AssemblyName>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <BepInExPluginGuid>gg.deca.Bloodstone</BepInExPluginGuid>
+    <BepInExPluginGuid>Bloodpebble</BepInExPluginGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <BepInExVersion>6.0.0-be.733</BepInExVersion>
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.2.9999</Version> <!-- This is local version, otherwise property set by CI -->
-    <PackageId>VRising.Bloodstone</PackageId>
+    <Version>1.0.0</Version> <!-- This is local version, otherwise property set by CI -->
+    <PackageId>VRising.Bloodpebble</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Authors>deca, molenzwiebel</Authors>
-    <Company>deca</Company>
-    <Description>Plugin framework and general utilities for V Rising mods.</Description>
+    <Authors>cheesasaurus, deca, molenzwiebel</Authors>
+    <Description>Hot reloader for V Rising mods.</Description>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>License</PackageLicenseFile>
     <PackageTags>VRising</PackageTags>
     <PackageProjectUrl>https://wiki.vrisingmods.com/</PackageProjectUrl>
-    <PackageRepositoryUrl>https://github.com/decaprime/Bloodstone</PackageRepositoryUrl>
+    <PackageRepositoryUrl>https://github.com/cheesasaurus/Bloodpebble</PackageRepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
