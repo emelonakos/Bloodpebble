@@ -1,13 +1,11 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using BepInEx;
-using BepInEx.Unity.IL2CPP;
-using Mono.Cecil;
 using UnityEngine;
 using Bloodstone.Hooks;
+using Bloodpebble.Reloading;
+using Unity.Entities;
 
 namespace Bloodstone.API;
 
@@ -20,12 +18,7 @@ public static class Reload
 #nullable enable
 
     private static KeyCode _keybinding = KeyCode.F6;
-
-    /// <summary>
-    /// Contains the list of all plugins that are loaded and support reloading
-    /// They exist outside of <see cref="IL2CPPChainloader"/>"/>
-    /// </summary>
-    public static List<BasePlugin> LoadedPlugins { get; } = new();
+    private static BloodpebbleChainloader chainloader = new();
 
     internal static void Initialize(string reloadCommand, string reloadPluginsFolder)
     {
@@ -61,11 +54,12 @@ public static class Reload
         ev.Cancel();
 
         UnloadPlugins();
-        var loaded = LoadPlugins();
+        var loadedPlugins = LoadPlugins();
 
-        if (loaded.Count > 0)
+        if (loadedPlugins.Count > 0)
         {
-            ev.User.SendSystemMessage($"Reloaded {string.Join(", ", loaded)}. See console for details.");
+            var pluginNames = loadedPlugins.Select(plugin => plugin.Metadata.Name);
+            ev.User.SendSystemMessage($"Reloaded {string.Join(", ", pluginNames)}. See console for details.");
         }
         else
         {
@@ -73,53 +67,18 @@ public static class Reload
         }
     }
 
-    private static void UnloadPlugins()
-    {
-        for (int i = LoadedPlugins.Count - 1; i >= 0; i--)
-        {
-            var plugin = LoadedPlugins[i];
-
-            if (!plugin.Unload())
-            {
-                BloodstonePlugin.Logger.LogWarning($"Plugin {plugin.GetType().FullName} does not support unloading, skipping...");
-            }
-            else
-            {
-                LoadedPlugins.RemoveAt(i);
-            }
-        }
-    }
-
-    private static List<string> LoadPlugins()
+    private static IList<PluginInfo> LoadPlugins()
     {
         if (!Directory.Exists(_reloadPluginsFolder))
         {
             Directory.CreateDirectory(_reloadPluginsFolder);
         }
-        return Directory.GetFiles(_reloadPluginsFolder, "*.dll").SelectMany(LoadPlugin).ToList();
+        return chainloader.LoadPlugins(_reloadPluginsFolder);
     }
 
-    private static List<string> LoadPlugin(string path)
+    private static void UnloadPlugins()
     {
-        var defaultResolver = new DefaultAssemblyResolver();
-        defaultResolver.AddSearchDirectory(_reloadPluginsFolder);
-        defaultResolver.AddSearchDirectory(Paths.ManagedPath);
-        defaultResolver.AddSearchDirectory(Paths.BepInExAssemblyDirectory);
-        defaultResolver.AddSearchDirectory(Path.Combine(Paths.BepInExRootPath, "interop"));
-
-        using var dll = AssemblyDefinition.ReadAssembly(path, new() { AssemblyResolver = defaultResolver });
-        dll.Name.Name = $"{dll.Name.Name}-{DateTime.Now.Ticks}";
-
-        using var ms = new MemoryStream();
-        dll.Write(ms);
-
-        var assembly = Assembly.Load(ms.ToArray());
-
-        var canPluginsDependOnOtherPlugins = false;
-        if (canPluginsDependOnOtherPlugins)
-            return LoadPluginsFromAssemblyTheWayScriptEngineDoesIt(assembly);
-        else
-            return LoadPluginsFromAssemblyTheWayBloodstoneDoesIt(assembly);
+        chainloader.UnloadPlugins();
     }
 
     private class ReloadBehaviour : UnityEngine.MonoBehaviour
@@ -129,53 +88,10 @@ public static class Reload
             if (UnityEngine.Input.GetKeyDown(_keybinding))
             {
                 BloodstonePlugin.Logger.LogInfo("Reloading client plugins...");
-
                 UnloadPlugins();
                 LoadPlugins();
             }
         }
-    }
-
-    private static List<string> LoadPluginsFromAssemblyTheWayBloodstoneDoesIt(Assembly assembly)
-    {
-        var loaded = new List<string>();
-        foreach (var pluginType in assembly.GetTypes().Where(x => typeof(BasePlugin).IsAssignableFrom(x)))
-        {
-            // skip plugins already loaded
-            if (LoadedPlugins.Any(x => x.GetType() == pluginType)) continue;
-
-            try
-            {
-                // we skip chainloader here and don't check dependencies. Fast n dirty.
-                var plugin = (BasePlugin)Activator.CreateInstance(pluginType);
-                var metadata = MetadataHelper.GetMetadata(plugin);
-                LoadedPlugins.Add(plugin);
-                plugin.Load();
-                loaded.Add(metadata.Name);
-
-                // ensure initialize hook runs even if we reload far after initialization is already done
-                if (Hooks.OnInitialize.HasInitialized && plugin is IRunOnInitialized runOnInitialized)
-                {
-                    runOnInitialized.OnGameInitialized();
-                }
-
-                BloodstonePlugin.Logger.LogInfo($"Loaded plugin {pluginType.FullName}");
-            }
-            catch (Exception ex)
-            {
-                BloodstonePlugin.Logger.LogError($"Plugin {pluginType.FullName} threw an exception during initialization:");
-                BloodstonePlugin.Logger.LogError(ex);
-            }
-        }
-        return loaded;
-    }
-
-    // see the ScriptEngine tool from https://github.com/BepInEx/BepInEx.Debug
-    private static List<string> LoadPluginsFromAssemblyTheWayScriptEngineDoesIt(Assembly assembly)
-    {
-        var loaded = new List<string>();
-        // TODO: implement
-        return loaded;
     }
     
 }

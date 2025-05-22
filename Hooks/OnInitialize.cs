@@ -41,14 +41,6 @@ static class OnInitialize
                 runOnInitialized.OnGameInitialized();
             }
         }
-
-        foreach (var plugin in API.Reload.LoadedPlugins)
-        {
-            if (plugin is IRunOnInitialized runOnInitialized)
-            {
-                runOnInitialized.OnGameInitialized();
-            }
-        }
     }
 
     // these are intentionally different classes, even if their bodies _currently_ are the same
