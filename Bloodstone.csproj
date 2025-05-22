@@ -7,6 +7,7 @@
     <BepInExPluginGuid>gg.deca.Bloodstone</BepInExPluginGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+    <BepInExVersion>6.0.0-be.733</BepInExVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -31,11 +32,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="VRising.Unhollowed.Client" Version="1.0.*" />
-    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.691" IncludeAssets="compile" />
-    <PackageReference Include="BepInEx.Core" Version="6.0.0-be.691" IncludeAssets="compile" />
+    <PackageReference Include="VRising.Unhollowed.Client" Version="1.1.*" />
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="$(BepInExVersion)" IncludeAssets="compile" />
+    <PackageReference Include="BepInEx.Core" Version="$(BepInExVersion)" IncludeAssets="compile" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.1.0" />
-    <PackageReference Include="Iced" Version="1.20.0" />
     <PackageReference Include="Standart.Hash.xxHash" Version="3.1.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

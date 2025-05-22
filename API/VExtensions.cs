@@ -16,7 +16,8 @@ public static class VExtensions
     {
         if (!VWorld.IsServer) throw new System.Exception("SendSystemMessage can only be called on the server.");
 
-        ServerChatUtils.SendSystemMessageToClient(VWorld.Server.EntityManager, user, message);
+        var messageString512Bytes = new Unity.Collections.FixedString512Bytes(message); 
+        ServerChatUtils.SendSystemMessageToClient(VWorld.Server.EntityManager, user, ref messageString512Bytes);
     }
 
     /// <summary>
