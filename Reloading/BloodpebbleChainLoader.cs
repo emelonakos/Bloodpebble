@@ -17,7 +17,7 @@ class BloodpebbleChainloader
         normalPlugins.ToList().ForEach(x => chainloaderHelper.Plugins[x.Key] = x.Value);
 
         var discoveredPlugins = chainloaderHelper.DiscoverPluginsFrom(pluginsPath);
-        var loadedPlugins = chainloaderHelper.LoadPlugins(discoveredPlugins);
+        var loadedPlugins = chainloaderHelper.LoadPlugins(discoveredPlugins, pluginsPath);
         _plugins = loadedPlugins;
         return loadedPlugins;
     }

@@ -33,7 +33,7 @@ class ChainloaderHelper : IL2CPPChainloader
         return base.ModifyLoadOrder(plugins);
     }
 
-    public IList<PluginInfo> LoadPlugins(IList<BepInEx.PluginInfo> plugins)
+    public IList<PluginInfo> LoadPlugins(IList<BepInEx.PluginInfo> plugins, string reloadablePluginsDir)
     {
         var sortedPlugins = ModifyLoadOrder(plugins);
 
@@ -104,7 +104,24 @@ class ChainloaderHelper : IL2CPPChainloader
                 BloodpebblePlugin.Logger.Log(LogLevel.Info, $"Loading [{plugin}]");
 
                 if (!loadedAssemblies.TryGetValue(plugin.Location, out var ass))
-                    loadedAssemblies[plugin.Location] = ass = Assembly.LoadFrom(plugin.Location);
+                {
+                    //loadedAssemblies[plugin.Location] = ass = Assembly.LoadFrom(plugin.Location);
+                    
+                    // Create and load a copy of the assembly, to prevent filesystem locks on the things we want to hot reload
+                    var path = plugin.Location;
+                    var defaultResolver = new DefaultAssemblyResolver();
+                    defaultResolver.AddSearchDirectory(reloadablePluginsDir); // todo: clean this up
+                    defaultResolver.AddSearchDirectory(Paths.ManagedPath);
+                    defaultResolver.AddSearchDirectory(Paths.BepInExAssemblyDirectory);
+                    defaultResolver.AddSearchDirectory(Path.Combine(Paths.BepInExRootPath, "interop"));
+
+                    using var dll = AssemblyDefinition.ReadAssembly(path, new() { AssemblyResolver = defaultResolver });
+                    dll.Name.Name = $"{dll.Name.Name}-{DateTime.Now.Ticks}";
+
+                    using var ms = new MemoryStream();
+                    dll.Write(ms);
+                    loadedAssemblies[plugin.Location] = ass = Assembly.Load(ms.ToArray());
+                }
 
                 var bloodpebblePlugin = new PluginInfo
                 {
