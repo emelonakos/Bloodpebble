@@ -1,7 +1,7 @@
 
 # Bloodpebble
 
-![bloodpebble-banner](bloodpebble-banner.png)
+![bloodpebble-banner](https://github.com/cheesasaurus/Bloodpebble/raw/main/bloodpebble-banner.png)
 
 Bloodpebble is a lightweight alternative to [Bloodstone](https://github.com/decaprime/Bloodstone). It allows reloading plugins without restarting the game.
 

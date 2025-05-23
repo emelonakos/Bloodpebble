@@ -11,11 +11,12 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.0.0</Version> <!-- This is local version, otherwise property set by CI -->
+    <Version>1.0.0</Version>
     <PackageId>VRising.Bloodpebble</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Authors>cheesasaurus, deca, molenzwiebel</Authors>
     <Description>Hot reloader for V Rising mods.</Description>
+    <WebsiteURL>https://github.com/cheesasaurus/Bloodpebble</WebsiteURL>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>License</PackageLicenseFile>
@@ -36,4 +37,30 @@
     <PackageReference Include="BepInEx.Core" Version="$(BepInExVersion)" IncludeAssets="compile" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.1.0" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <ThunderstoreManifestContent>
+      <![CDATA[
+{
+  "name": "$(AssemblyName)",
+  "version_number": "$(Version)",
+  "website_url": "$(WebsiteURL)",
+  "description": "$(Description)",
+  "dependencies": [
+      "BepInEx-BepInExPack_V_Rising-1.733.2"
+  ]
+}
+    ]]>
+    </ThunderstoreManifestContent>
+  </PropertyGroup>
+
+  <Target Name="ThunderstoreDist" AfterTargets="Publish">
+    <WriteLinesToFile Lines="$(ThunderstoreManifestContent)" File="dist/thunderstore/temp/manifest.json" WriteOnlyWhenDifferent="true" Overwrite="true" />
+    <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="dist/thunderstore/temp" />
+    <Copy SourceFiles="icon.png" DestinationFolder="dist/thunderstore/temp"/>
+    <Copy SourceFiles="README.md" DestinationFolder="dist/thunderstore/temp"/>
+    <ZipDirectory SourceDirectory="dist/thunderstore/temp" DestinationFile="dist/thunderstore/$(AssemblyName).zip" Overwrite="true"></ZipDirectory>
+    <RemoveDir Directories="dist/thunderstore/temp"/>
+  </Target>
+
 </Project>

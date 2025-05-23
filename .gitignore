@@ -9,3 +9,4 @@ FodyWeavers.xsd
 
 nuget/
 .vs/
+dist/
