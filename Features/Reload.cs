@@ -5,7 +5,7 @@ using BepInEx;
 using UnityEngine;
 using Bloodpebble.Hooks;
 using Bloodpebble.Reloading;
-using Unity.Entities;
+using Bloodpebble.Utils;
 
 namespace Bloodpebble.API;
 

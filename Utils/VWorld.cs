@@ -1,12 +1,12 @@
 using Unity.Entities;
 using UnityEngine;
 
-namespace Bloodpebble.API;
+namespace Bloodpebble.Utils;
 
 /// <summary>
 /// Various utilities for interacting with the Unity ECS world.
 /// </summary>
-public static class VWorld
+internal static class VWorld
 {
     private static World? _clientWorld;
     private static World? _serverWorld;

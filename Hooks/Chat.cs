@@ -4,7 +4,7 @@ using HarmonyLib;
 using ProjectM;
 using ProjectM.Network;
 using Unity.Entities;
-using Bloodpebble.API;
+using Bloodpebble.Utils;
 
 namespace Bloodpebble.Hooks;
 

@@ -3,6 +3,7 @@ using HarmonyLib;
 using Bloodpebble.API;
 using ProjectM;
 using Stunlock.Core;
+using Bloodpebble.Utils;
 
 namespace Bloodpebble.Hooks;
 
