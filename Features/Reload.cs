@@ -89,7 +89,17 @@ public static class Reload
             {
                 BloodpebblePlugin.Logger.LogInfo("Reloading client plugins...");
                 UnloadPlugins();
-                LoadPlugins();
+                var loadedPlugins = LoadPlugins();
+
+                if (loadedPlugins.Count > 0)
+                {
+                    var pluginNames = loadedPlugins.Select(plugin => plugin.Metadata.Name);
+                    BloodpebblePlugin.Logger.LogInfo($"Reloaded {string.Join(", ", pluginNames)}.");
+                }
+                else
+                {
+                    BloodpebblePlugin.Logger.LogInfo($"Did not reload any plugins because no reloadable plugins were found.");
+                }
             }
         }
     }
