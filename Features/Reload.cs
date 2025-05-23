@@ -68,7 +68,7 @@ public static class Reload
         }
     }
 
-    private static IList<PluginInfo> LoadPlugins()
+    private static IList<Bloodpebble.Reloading.PluginInfo> LoadPlugins()
     {
         if (!Directory.Exists(_reloadPluginsFolder))
         {

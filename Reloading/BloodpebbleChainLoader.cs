@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using BepInEx;
 using BepInEx.Unity.IL2CPP;
 
@@ -7,11 +8,18 @@ namespace Bloodpebble.Reloading;
 class BloodpebbleChainloader
 {
     private IList<PluginInfo> _plugins = new List<PluginInfo>();
+    private ChainloaderHelper chainloaderHelper = new ChainloaderHelper();
 
     public IList<PluginInfo> LoadPlugins(string pluginsPath)
     {
-        _plugins = IL2CPPChainloader.Instance.LoadPlugins(pluginsPath);
-        return _plugins;
+        // first, make sure the chainloaderHelper knows about existing non-reloadable plugins that may be dependencies
+        var normalPlugins = IL2CPPChainloader.Instance.Plugins;
+        normalPlugins.ToList().ForEach(x => chainloaderHelper.Plugins[x.Key] = x.Value);
+
+        var discoveredPlugins = chainloaderHelper.DiscoverPluginsFrom(pluginsPath);
+        var loadedPlugins = chainloaderHelper.LoadPlugins(discoveredPlugins);
+        _plugins = loadedPlugins;
+        return loadedPlugins;
     }
 
     public void UnloadPlugins()
@@ -27,7 +35,7 @@ class BloodpebbleChainloader
             }
             else
             {
-                IL2CPPChainloader.Instance.Plugins.Remove(pluginGuid);
+                chainloaderHelper.Plugins.Remove(pluginGuid);
                 _plugins.RemoveAt(i);
             }
         }
