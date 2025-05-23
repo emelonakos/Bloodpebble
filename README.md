@@ -5,6 +5,14 @@
 
 Bloodpebble is a lightweight alternative to [Bloodstone](https://github.com/decaprime/Bloodstone). It allows reloading plugins without restarting the game.
 
+Differences from Bloodstone:
+- Bloodpebble is only responsible for hot-reloading.
+  - Bloodstone provides functionality for other things. ergo Bloodpebble has a lower maintenance cost when VRising updates.
+- Bloodpebble checks plugin dependencies to load them in the correct order. 
+  - Bloodstone does not. Working on a library for other plugins to use? Choose Bloodpebble for your hot-reloading needs.
+- Bloodpebble is not required as a dependency. Simply drop your plugins into the BloodpebblePlugins folder and you're good to go.
+  - Bloodstone can only reload plugins if they opt-in using its API. Broken bloodstone = broken dependent plugins.
+
 ### Installation
 
 - Install [BepInEx](https://v-rising.thunderstore.io/package/BepInEx/BepInExPack_V_Rising/).

@@ -4,9 +4,9 @@ using HarmonyLib;
 using ProjectM;
 using ProjectM.Network;
 using Unity.Entities;
-using Bloodstone.API;
+using Bloodpebble.API;
 
-namespace Bloodstone.Hooks;
+namespace Bloodpebble.Hooks;
 
 public static class Chat
 {
@@ -23,7 +23,7 @@ public static class Chat
     public static unsafe void Initialize()
     {
         if (_harmony != null)
-            throw new Exception("Detour already initialized. You don't need to call this. The Bloodstone plugin will do it for you.");
+            throw new Exception("Detour already initialized. You don't need to call this. The Bloodpebble plugin will do it for you.");
 
         _harmony = Harmony.CreateAndPatchAll(typeof(Chat), MyPluginInfo.PLUGIN_GUID);
     }
@@ -31,7 +31,7 @@ public static class Chat
     public static unsafe void Uninitialize()
     {
         if (_harmony == null)
-            throw new Exception("Detour wasn't initialized. Are you trying to unload Bloodstone twice?");
+            throw new Exception("Detour wasn't initialized. Are you trying to unload Bloodpebble twice?");
 
         _harmony.UnpatchSelf();
     }
@@ -47,7 +47,7 @@ public static class Chat
             var fromCharacter = VWorld.Server.EntityManager.GetComponentData<FromCharacter>(entity);
             var ev = new VChatEvent(fromCharacter.User, fromCharacter.Character, chatMessage.MessageText.ToString(), chatMessage.MessageType);
 
-            BloodstonePlugin.Logger.LogInfo($"[Chat] [{ev.Type}] {ev.User.CharacterName}: {ev.Message}");
+            BloodpebblePlugin.Logger.LogInfo($"[Chat] [{ev.Type}] {ev.User.CharacterName}: {ev.Message}");
 
             try
             {
@@ -58,8 +58,8 @@ public static class Chat
             }
             catch (Exception ex)
             {
-                BloodstonePlugin.Logger.LogError("Error dispatching chat event:");
-                BloodstonePlugin.Logger.LogError(ex);
+                BloodpebblePlugin.Logger.LogError("Error dispatching chat event:");
+                BloodpebblePlugin.Logger.LogError(ex);
             }
         }
     }

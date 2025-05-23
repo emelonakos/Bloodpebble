@@ -1,4 +1,4 @@
-namespace Bloodstone.API;
+namespace Bloodpebble.API;
 
 /// <summary>
 /// Helper interface for plugins that wish to run something once the
@@ -9,9 +9,9 @@ namespace Bloodstone.API;
 /// is nice to have.
 ///
 /// This interface will run your code both when it is loaded normally (i.e.
-/// as a normal BepInEx plugin) and when it is reloaded through the Bloodstone
-/// reloading facilities (see also the Reloadable attribute). You do not need
-/// to attach an event handler anywhere, we'll magically call your plugin.
+/// as a normal BepInEx plugin) and when it is reloaded through the Bloodpebble
+/// reloading facilities. You do not need to attach an event handler anywhere,
+/// we'll magically call your plugin.
 ///
 /// This works on both client and server. The exact time at which the callback
 /// will be called is undefined, but it is guaranteed to happen after the

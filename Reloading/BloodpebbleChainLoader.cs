@@ -23,7 +23,7 @@ class BloodpebbleChainloader
 
             if (!plugin.Unload())
             {
-                Bloodstone.BloodstonePlugin.Logger.LogWarning($"Plugin {plugin.GetType().FullName} does not support unloading, skipping...");
+                Bloodpebble.BloodpebblePlugin.Logger.LogWarning($"Plugin {plugin.GetType().FullName} does not support unloading, skipping...");
             }
             else
             {

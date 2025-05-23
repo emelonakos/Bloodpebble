@@ -1,10 +1,10 @@
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
-using Bloodstone.API;
+using Bloodpebble.API;
 using ProjectM;
 using Stunlock.Core;
 
-namespace Bloodstone.Hooks;
+namespace Bloodpebble.Hooks;
 
 /// <summary>
 /// Hook responsible for handling calls to IRunOnInitialized.
@@ -29,7 +29,7 @@ static class OnInitialize
 
     private static void InvokePlugins()
     {
-        BloodstonePlugin.Logger.LogInfo("Game has bootstrapped. Worlds and systems now exist.");
+        BloodpebblePlugin.Logger.LogInfo("Game has bootstrapped. Worlds and systems now exist.");
 
         if (HasInitialized) return;
         HasInitialized = true;

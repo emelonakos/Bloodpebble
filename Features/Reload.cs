@@ -3,11 +3,11 @@ using System.IO;
 using System.Linq;
 using BepInEx;
 using UnityEngine;
-using Bloodstone.Hooks;
+using Bloodpebble.Hooks;
 using Bloodpebble.Reloading;
 using Unity.Entities;
 
-namespace Bloodstone.API;
+namespace Bloodpebble.API;
 
 public static class Reload
 {
@@ -30,7 +30,7 @@ public static class Reload
 
         if (VWorld.IsClient)
         {
-            _clientBehavior = BloodstonePlugin.Instance.AddComponent<ReloadBehaviour>();
+            _clientBehavior = BloodpebblePlugin.Instance.AddComponent<ReloadBehaviour>();
         }
 
         LoadPlugins();
@@ -87,7 +87,7 @@ public static class Reload
         {
             if (UnityEngine.Input.GetKeyDown(_keybinding))
             {
-                BloodstonePlugin.Logger.LogInfo("Reloading client plugins...");
+                BloodpebblePlugin.Logger.LogInfo("Reloading client plugins...");
                 UnloadPlugins();
                 LoadPlugins();
             }
