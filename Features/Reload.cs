@@ -6,8 +6,9 @@ using UnityEngine;
 using Bloodpebble.Hooks;
 using Bloodpebble.Reloading;
 using Bloodpebble.Utils;
+using Bloodpebble.Extensions;
 
-namespace Bloodpebble.API;
+namespace Bloodpebble.Features;
 
 public static class Reload
 {

@@ -2,7 +2,7 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
-using Bloodpebble.API;
+using Bloodpebble.Features;
 using Bloodpebble.Utils;
 
 namespace Bloodpebble

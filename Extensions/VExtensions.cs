@@ -2,7 +2,7 @@ using Bloodpebble.Utils;
 using ProjectM;
 using ProjectM.Network;
 
-namespace Bloodpebble.API;
+namespace Bloodpebble.Extensions;
 
 /// <summary>
 /// Various extensions to make it easier to work with VRising APIs.
