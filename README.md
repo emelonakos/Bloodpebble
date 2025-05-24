@@ -12,6 +12,8 @@ Differences from Bloodstone:
   - Bloodstone does not. Working on a library for other plugins to use? Choose Bloodpebble for your hot-reloading needs.
 - Bloodpebble is not required as a dependency. Simply drop your plugins into the BloodpebblePlugins folder and you're good to go.
   - Bloodstone can only reload plugins if they opt-in using its API. Broken bloodstone = broken dependent plugins.
+- Bloodpebble can automatically reload plugins when files are changed in the BloodpebblePlugins folder.
+  - Bloodstone cannot. A manual reload is required.
 
 ### Installation
 
