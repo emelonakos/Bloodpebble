@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BepInEx;
 using UnityEngine;
 using Bloodpebble.Hooks;
 using Bloodpebble.Reloading;
@@ -15,35 +14,43 @@ public static class Reload
 #nullable disable
     private static string _reloadCommand;
     private static string _reloadPluginsFolder;
-    private static ReloadBehaviour _clientBehavior;
+    private static bool _enableAutoReload;
+    private static float _autoReloadDelaySeconds;
+    private static ReloadBehaviour _reloadBehavior;
+    private static FileSystemWatcher _fileSystemWatcher;
 #nullable enable
 
     private static KeyCode _keybinding = KeyCode.F6;
+    private static bool _isPendingAutoReload = false;
+    private static float autoReloadTimer;
     private static BloodpebbleChainloader _chainloader = new();
 
-    internal static void Initialize(string reloadCommand, string reloadPluginsFolder)
+    internal static void Initialize(string reloadCommand, string reloadPluginsFolder, bool enableAutoReload, float autoReloadDelaySeconds)
     {
         _reloadCommand = reloadCommand;
         _reloadPluginsFolder = reloadPluginsFolder;
+        _autoReloadDelaySeconds = autoReloadDelaySeconds;
 
         // note: no need to remove this on unload, since we'll unload the hook itself anyway
         Chat.OnChatMessage += HandleReloadCommand;
 
-        if (VWorld.IsClient)
-        {
-            _clientBehavior = BloodpebblePlugin.Instance.AddComponent<ReloadBehaviour>();
-        }
+        _reloadBehavior = BloodpebblePlugin.Instance.AddComponent<ReloadBehaviour>();
 
         LoadPlugins();
+
+        if (enableAutoReload) {
+            StartFileSystemWatcher();
+        }
     }
 
     internal static void Uninitialize()
     {
+        _fileSystemWatcher = null;
         Hooks.Chat.OnChatMessage -= HandleReloadCommand;
 
-        if (_clientBehavior != null)
+        if (_reloadBehavior != null)
         {
-            UnityEngine.Object.Destroy(_clientBehavior);
+            UnityEngine.Object.Destroy(_reloadBehavior);
         }
     }
 
@@ -82,6 +89,22 @@ public static class Reload
         _chainloader.UnloadPlugins();
     }
 
+    private static void ReloadPlugins()
+    {
+        UnloadPlugins();
+        var loadedPlugins = LoadPlugins();
+
+        if (loadedPlugins.Count > 0)
+        {
+            var pluginNames = loadedPlugins.Select(plugin => plugin.Metadata.Name);
+            BloodpebblePlugin.Logger.LogInfo($"Reloaded {string.Join(", ", pluginNames)}.");
+        }
+        else
+        {
+            BloodpebblePlugin.Logger.LogInfo($"Did not reload any plugins because no reloadable plugins were found.");
+        }
+    }
+
     private class ReloadBehaviour : UnityEngine.MonoBehaviour
     {
         private void Update()
@@ -89,20 +112,38 @@ public static class Reload
             if (UnityEngine.Input.GetKeyDown(_keybinding))
             {
                 BloodpebblePlugin.Logger.LogInfo("Reloading client plugins...");
-                UnloadPlugins();
-                var loadedPlugins = LoadPlugins();
-
-                if (loadedPlugins.Count > 0)
+                ReloadPlugins();
+                _isPendingAutoReload = false;
+            }
+            else if (_isPendingAutoReload)
+            {
+                autoReloadTimer -= Time.unscaledDeltaTime;
+                if (autoReloadTimer <= .0f)
                 {
-                    var pluginNames = loadedPlugins.Select(plugin => plugin.Metadata.Name);
-                    BloodpebblePlugin.Logger.LogInfo($"Reloaded {string.Join(", ", pluginNames)}.");
-                }
-                else
-                {
-                    BloodpebblePlugin.Logger.LogInfo($"Did not reload any plugins because no reloadable plugins were found.");
+                    BloodpebblePlugin.Logger.LogInfo("Automatically reloading plugins...");
+                    ReloadPlugins();
+                    _isPendingAutoReload = false;
                 }
             }
         }
+    }
+
+    private static void StartFileSystemWatcher()
+    {
+        _fileSystemWatcher = new FileSystemWatcher(_reloadPluginsFolder);
+        _fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+        _fileSystemWatcher.Filter = "*.dll";
+        _fileSystemWatcher.Changed += FileChangedEventHandler;
+        _fileSystemWatcher.Deleted += FileChangedEventHandler;
+        _fileSystemWatcher.Created += FileChangedEventHandler;
+        _fileSystemWatcher.Renamed += FileChangedEventHandler;
+        _fileSystemWatcher.EnableRaisingEvents = true;
+    }
+    
+    private static void FileChangedEventHandler(object sender, FileSystemEventArgs args)
+    {
+        _isPendingAutoReload = true;
+        autoReloadTimer = _autoReloadDelaySeconds;
     }
     
 }

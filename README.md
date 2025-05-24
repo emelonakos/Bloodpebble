@@ -25,6 +25,8 @@ Bloodpebble supports the following configuration settings, available in `BepInEx
 
 **Client/Server Options:**
 - `ReloadablePluginsFolder` [default `BepInEx/BloodpebblePlugins`]: The path to the directory where reloadable plugins should be searched. Relative to the game directory.
+- `EnableAutoReload` [default `true`]: Automatically reloads all plugins if any of the files get changed (added/removed/modified).
+- `AutoReloadDelaySeconds` [default: `2`]: Delay in seconds before auto reloading.
 
 **Client Options:**
 - The keybinding to reload is F6. Not currently configurable.
