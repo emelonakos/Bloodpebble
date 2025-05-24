@@ -19,21 +19,19 @@ namespace Bloodpebble.Reloading;
 // Contains a lot of copy/paste/modified stuff from the Bepinex BaseChainloader.
 // Unfortunately, things are rather locked-down and not really intended for third-party extension,
 // so we are doing some dirty stuff here to work around it.
-class ChainloaderHelper : IL2CPPChainloader
+class ModifiedBepInExChainloader : IL2CPPChainloader
 {
+    private BaseAssemblyResolver _assemblyResolver;
 
-    public new IList<BepInEx.PluginInfo> DiscoverPluginsFrom(string path, string cacheName = "chainloader")
+    public ModifiedBepInExChainloader()
     {
-        return base.DiscoverPluginsFrom(path, cacheName);
+        _assemblyResolver = new DefaultAssemblyResolver();
+        _assemblyResolver.AddSearchDirectory(Paths.ManagedPath);
+        _assemblyResolver.AddSearchDirectory(Paths.BepInExAssemblyDirectory);
+        _assemblyResolver.AddSearchDirectory(Path.Combine(Paths.BepInExRootPath, "interop"));
     }
 
-
-    public virtual new IList<BepInEx.PluginInfo> ModifyLoadOrder(IList<BepInEx.PluginInfo> plugins)
-    {
-        return base.ModifyLoadOrder(plugins);
-    }
-
-    public IList<PluginInfo> LoadPlugins(IList<BepInEx.PluginInfo> plugins, string reloadablePluginsDir)
+    public IList<PluginInfo> LoadPlugins(IList<BepInEx.PluginInfo> plugins)
     {
         var sortedPlugins = ModifyLoadOrder(plugins);
 
@@ -103,24 +101,15 @@ class ChainloaderHelper : IL2CPPChainloader
             {
                 BloodpebblePlugin.Logger.Log(LogLevel.Info, $"Loading [{plugin}]");
 
-                if (!loadedAssemblies.TryGetValue(plugin.Location, out var ass))
-                {
-                    //loadedAssemblies[plugin.Location] = ass = Assembly.LoadFrom(plugin.Location);
-                    
+                if (!loadedAssemblies.TryGetValue(plugin.Location, out var assembly))
+                {                    
                     // Create and load a copy of the assembly, to prevent filesystem locks on the things we want to hot reload
-                    var path = plugin.Location;
-                    var defaultResolver = new DefaultAssemblyResolver();
-                    defaultResolver.AddSearchDirectory(reloadablePluginsDir); // todo: clean this up
-                    defaultResolver.AddSearchDirectory(Paths.ManagedPath);
-                    defaultResolver.AddSearchDirectory(Paths.BepInExAssemblyDirectory);
-                    defaultResolver.AddSearchDirectory(Path.Combine(Paths.BepInExRootPath, "interop"));
-
-                    using var dll = AssemblyDefinition.ReadAssembly(path, new() { AssemblyResolver = defaultResolver });
+                    using var dll = AssemblyDefinition.ReadAssembly(plugin.Location, new() { AssemblyResolver = _assemblyResolver });
                     dll.Name.Name = $"{dll.Name.Name}-{DateTime.Now.Ticks}";
 
                     using var ms = new MemoryStream();
                     dll.Write(ms);
-                    loadedAssemblies[plugin.Location] = ass = Assembly.Load(ms.ToArray());
+                    loadedAssemblies[plugin.Location] = assembly = Assembly.Load(ms.ToArray());
                 }
 
                 var bloodpebblePlugin = new PluginInfo
@@ -134,8 +123,8 @@ class ChainloaderHelper : IL2CPPChainloader
                     TypeName = plugin.TypeName,
                 };
                 Plugins[plugin.Metadata.GUID] = bloodpebblePlugin;
-                TryRunModuleCtor(plugin, ass);
-                bloodpebblePlugin.Instance = LoadPlugin(plugin, ass);
+                TryRunModuleCtor(plugin, assembly);
+                bloodpebblePlugin.Instance = LoadPlugin(plugin, assembly);
                 loadedPlugins.Add(bloodpebblePlugin);
 
                 // PluginLoaded?.Invoke(bloodpebblePlugin);
@@ -153,11 +142,42 @@ class ChainloaderHelper : IL2CPPChainloader
         return loadedPlugins;
     }
 
+    /// <summary>
+    /// Detects and loads all plugins in the specified directories.
+    /// </summary>
+    /// <remarks>
+    /// It is better to collect all paths at once and use a single call to LoadPlugins than multiple calls.
+    /// This allows to run proper dependency resolving and to load all plugins in one go.
+    /// </remarks>
+    /// <param name="pluginsPaths">Directories to search the plugins from.</param>
+    /// <returns>List of loaded plugin infos.</returns>
+    public new IList<PluginInfo> LoadPlugins(params string[] pluginsPaths)
+    {
+        var discoveredPlugins = new List<BepInEx.PluginInfo>();
+        foreach (var pluginsPath in pluginsPaths)
+        {
+            discoveredPlugins.AddRange(DiscoverPluginsFrom(pluginsPath));
+            _assemblyResolver.AddSearchDirectory(pluginsPath);
+        }
+        
+        var loadedPlugins = LoadPlugins(discoveredPlugins);
+
+        foreach (var pluginsPath in pluginsPaths)
+        {
+            _assemblyResolver.RemoveSearchDirectory(pluginsPath);
+        }
+
+        return loadedPlugins;
+
+    }
+
     protected static void TryRunModuleCtor(BepInEx.PluginInfo plugin, Assembly assembly)
     {
         try
         {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             RuntimeHelpers.RunModuleConstructor(assembly.GetType(plugin.TypeName).Module.ModuleHandle);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
         }
         catch (Exception e)
         {

@@ -19,7 +19,7 @@ public static class Reload
 #nullable enable
 
     private static KeyCode _keybinding = KeyCode.F6;
-    private static BloodpebbleChainloader chainloader = new();
+    private static BloodpebbleChainloader _chainloader = new();
 
     internal static void Initialize(string reloadCommand, string reloadPluginsFolder)
     {
@@ -74,12 +74,12 @@ public static class Reload
         {
             Directory.CreateDirectory(_reloadPluginsFolder);
         }
-        return chainloader.LoadPlugins(_reloadPluginsFolder);
+        return _chainloader.LoadPlugins(_reloadPluginsFolder);
     }
 
     private static void UnloadPlugins()
     {
-        chainloader.UnloadPlugins();
+        _chainloader.UnloadPlugins();
     }
 
     private class ReloadBehaviour : UnityEngine.MonoBehaviour

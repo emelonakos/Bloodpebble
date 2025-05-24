@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using BepInEx;
 using BepInEx.Unity.IL2CPP;
 
 namespace Bloodpebble.Reloading;
@@ -8,16 +7,16 @@ namespace Bloodpebble.Reloading;
 class BloodpebbleChainloader
 {
     private IList<PluginInfo> _plugins = new List<PluginInfo>();
-    private ChainloaderHelper chainloaderHelper = new ChainloaderHelper();
+    private ModifiedBepInExChainloader _bepinexChainloader = new ();
 
     public IList<PluginInfo> LoadPlugins(string pluginsPath)
     {
-        // first, make sure the chainloaderHelper knows about existing non-reloadable plugins that may be dependencies
+        // first, make sure the bepinex chainloader knows about existing non-reloadable plugins that may be dependencies
         var normalPlugins = IL2CPPChainloader.Instance.Plugins;
-        normalPlugins.ToList().ForEach(x => chainloaderHelper.Plugins[x.Key] = x.Value);
+        normalPlugins.ToList().ForEach(x => _bepinexChainloader.Plugins[x.Key] = x.Value);
 
-        var discoveredPlugins = chainloaderHelper.DiscoverPluginsFrom(pluginsPath);
-        var loadedPlugins = chainloaderHelper.LoadPlugins(discoveredPlugins, pluginsPath);
+        // load the additional plugins
+        var loadedPlugins = _bepinexChainloader.LoadPlugins(pluginsPath);
         _plugins = loadedPlugins;
         return loadedPlugins;
     }
@@ -31,11 +30,11 @@ class BloodpebbleChainloader
 
             if (!plugin.Unload())
             {
-                Bloodpebble.BloodpebblePlugin.Logger.LogWarning($"Plugin {plugin.GetType().FullName} does not support unloading, skipping...");
+                BloodpebblePlugin.Logger.LogWarning($"Plugin {plugin.GetType().FullName} does not support unloading, skipping...");
             }
             else
             {
-                chainloaderHelper.Plugins.Remove(pluginGuid);
+                _bepinexChainloader.Plugins.Remove(pluginGuid);
                 _plugins.RemoveAt(i);
             }
         }
