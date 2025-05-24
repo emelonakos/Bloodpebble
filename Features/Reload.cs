@@ -14,7 +14,6 @@ public static class Reload
 #nullable disable
     private static string _reloadCommand;
     private static string _reloadPluginsFolder;
-    private static bool _enableAutoReload;
     private static float _autoReloadDelaySeconds;
     private static ReloadBehaviour _reloadBehavior;
     private static FileSystemWatcher _fileSystemWatcher;
