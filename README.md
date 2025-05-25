@@ -37,6 +37,11 @@ Bloodpebble supports the following configuration settings, available in `BepInEx
 - `ReloadCommand` [default `!reload`]: Which text command (sent in chat) should be used to trigger reloading of plugins.\
 User must first be AdminAuth'd (accomplished via console command).
 
+### RCON
+
+If [ScarletRCON](https://thunderstore.io/c/v-rising/p/ScarletMods/ScarletRCON/) is installed, bloodpebble will provide an RCON command to reload.
+- `bloodpebble.reloadplugins`
+
 ### Support
 
 Join the [modding community](https://vrisingmods.com/discord).

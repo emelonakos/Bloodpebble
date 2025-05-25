@@ -4,11 +4,13 @@ using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using Bloodpebble.Features;
 using Bloodpebble.Utils;
+using ScarletRCON.Shared;
 
 namespace Bloodpebble
 {
     [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
     [BepInDependency("gg.deca.VampireCommandFramework", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("markvaaz.ScarletRCON", BepInDependency.DependencyFlags.SoftDependency)]
     public class BloodpebblePlugin : BasePlugin
     {
 #nullable disable
@@ -41,13 +43,15 @@ namespace Bloodpebble
             Hooks.OnInitialize.Initialize();
 
             Logger.LogInfo($"Bloodpebble v{MyPluginInfo.PLUGIN_VERSION} loaded.");
-
-            // NOTE: MUST BE LAST. This initializes plugins that depend on our state being set up.
             Reload.Initialize(_reloadCommand.Value, _reloadPluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value);
+
+            RconCommandRegistrar.RegisterAll();
         }
 
         public override bool Unload()
         {
+            RconCommandRegistrar.UnregisterAssembly();
+
             // Hooks
             if (VWorld.IsServer)
             {

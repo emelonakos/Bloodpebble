@@ -36,6 +36,7 @@
     <PackageReference Include="BepInEx.Unity.IL2CPP" Version="$(BepInExVersion)" IncludeAssets="compile" />
     <PackageReference Include="BepInEx.Core" Version="$(BepInExVersion)" IncludeAssets="compile" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.1.0" />
+    <PackageReference Include="ScarletRCON.SourceSupport" Version="1.1.3" PrivateAssets="all" />
   </ItemGroup>
 
   <PropertyGroup>

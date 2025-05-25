@@ -4,8 +4,8 @@ using System.Linq;
 using UnityEngine;
 using Bloodpebble.Hooks;
 using Bloodpebble.Reloading;
-using Bloodpebble.Utils;
 using Bloodpebble.Extensions;
+using ScarletRCON.Shared;
 
 namespace Bloodpebble.Features;
 
@@ -31,13 +31,14 @@ public static class Reload
         _autoReloadDelaySeconds = autoReloadDelaySeconds;
 
         // note: no need to remove this on unload, since we'll unload the hook itself anyway
-        Chat.OnChatMessage += HandleReloadCommand;
+        Chat.OnChatMessage += HandleChatMessage;
 
         _reloadBehavior = BloodpebblePlugin.Instance.AddComponent<ReloadBehaviour>();
 
         LoadPlugins();
 
-        if (enableAutoReload) {
+        if (enableAutoReload)
+        {
             StartFileSystemWatcher();
         }
     }
@@ -45,7 +46,7 @@ public static class Reload
     internal static void Uninitialize()
     {
         _fileSystemWatcher = null;
-        Hooks.Chat.OnChatMessage -= HandleReloadCommand;
+        Hooks.Chat.OnChatMessage -= HandleChatMessage;
 
         if (_reloadBehavior != null)
         {
@@ -53,7 +54,7 @@ public static class Reload
         }
     }
 
-    private static void HandleReloadCommand(VChatEvent ev)
+    private static void HandleChatMessage(VChatEvent ev)
     {
         if (ev.Message != _reloadCommand) return;
         if (!ev.User.IsAdmin) return; // ignore non-admin reload attempts
@@ -138,11 +139,23 @@ public static class Reload
         _fileSystemWatcher.Renamed += FileChangedEventHandler;
         _fileSystemWatcher.EnableRaisingEvents = true;
     }
-    
+
     private static void FileChangedEventHandler(object sender, FileSystemEventArgs args)
     {
         _isPendingAutoReload = true;
         autoReloadTimer = _autoReloadDelaySeconds;
     }
-    
+
+    [RconCommandCategory("Server Administration")]
+    public static class RconCommands
+    {
+        [RconCommand("reloadplugins", "Reloads plugins in the BloodpebblePlugins folder")]
+        public static string Reload()
+        {
+            BloodpebblePlugin.Logger.LogInfo("Reloading plugins (triggered by RCON)...");
+            ReloadPlugins();
+            return "Reloaded Bloodpebble plugins";
+        }
+    }    
+
 }
