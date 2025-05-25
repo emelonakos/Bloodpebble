@@ -13,6 +13,7 @@ using BepInEx.Logging;
 using Mono.Cecil;
 using BepInEx.Bootstrap;
 using Unity.Collections;
+using System.Runtime.Loader;
 
 namespace Bloodpebble.Reloading;
 
@@ -22,6 +23,7 @@ namespace Bloodpebble.Reloading;
 class ModifiedBepInExChainloader : IL2CPPChainloader
 {
     private BaseAssemblyResolver _assemblyResolver;
+    private AssemblyLoadContext _assemblyLoadContext;
 
     public ModifiedBepInExChainloader()
     {
@@ -29,6 +31,18 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
         _assemblyResolver.AddSearchDirectory(Paths.ManagedPath);
         _assemblyResolver.AddSearchDirectory(Paths.BepInExAssemblyDirectory);
         _assemblyResolver.AddSearchDirectory(Path.Combine(Paths.BepInExRootPath, "interop"));
+        _assemblyLoadContext = CreateNewAssemblyLoadContext();
+    }
+
+    public void UnloadAssemblies()
+    {
+        _assemblyLoadContext.Unload();
+        _assemblyLoadContext = CreateNewAssemblyLoadContext();
+    }
+
+    private AssemblyLoadContext CreateNewAssemblyLoadContext()
+    {
+        return new AssemblyLoadContext(name: "BloodpebbleContext", isCollectible: true);
     }
 
     public IList<PluginInfo> LoadPlugins(IList<BepInEx.PluginInfo> plugins)
@@ -102,14 +116,13 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
                 BloodpebblePlugin.Logger.Log(LogLevel.Info, $"Loading [{plugin}]");
 
                 if (!loadedAssemblies.TryGetValue(plugin.Location, out var assembly))
-                {                    
+                {
                     // Create and load a copy of the assembly, to prevent filesystem locks on the things we want to hot reload
                     using var dll = AssemblyDefinition.ReadAssembly(plugin.Location, new() { AssemblyResolver = _assemblyResolver });
-                    dll.Name.Name = $"{dll.Name.Name}-{DateTime.Now.Ticks}";
-
                     using var ms = new MemoryStream();
                     dll.Write(ms);
-                    loadedAssemblies[plugin.Location] = assembly = Assembly.Load(ms.ToArray());
+                    ms.Seek(0, SeekOrigin.Begin);
+                    loadedAssemblies[plugin.Location] = assembly = _assemblyLoadContext.LoadFromStream(ms);
                 }
 
                 var bloodpebblePlugin = new PluginInfo
@@ -159,7 +172,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
             discoveredPlugins.AddRange(DiscoverPluginsFrom(pluginsPath));
             _assemblyResolver.AddSearchDirectory(pluginsPath);
         }
-        
+
         var loadedPlugins = LoadPlugins(discoveredPlugins);
 
         foreach (var pluginsPath in pluginsPaths)
@@ -185,4 +198,5 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
                        $"Couldn't run Module constructor for {assembly.FullName}::{plugin.TypeName}: {e}");
         }
     }
+    
 }

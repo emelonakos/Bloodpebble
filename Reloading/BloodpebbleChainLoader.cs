@@ -38,6 +38,7 @@ class BloodpebbleChainloader
                 _plugins.RemoveAt(i);
             }
         }
+        _bepinexChainloader.UnloadAssemblies();
     }
     
 }
