@@ -119,9 +119,9 @@ public static class Reload
                 autoReloadTimer -= Time.unscaledDeltaTime;
                 if (autoReloadTimer <= .0f)
                 {
+                    _isPendingAutoReload = false;
                     BloodpebblePlugin.Logger.LogInfo("Automatically reloading plugins...");
                     ReloadPlugins();
-                    _isPendingAutoReload = false;
                 }
             }
         }

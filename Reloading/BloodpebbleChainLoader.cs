@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Unity.IL2CPP;
+using ProjectM;
 
 namespace Bloodpebble.Reloading;
 
@@ -25,18 +27,25 @@ class BloodpebbleChainloader
     {
         for (int i = _plugins.Count - 1; i >= 0; i--)
         {
-            var pluginGuid = _plugins[i].Metadata.GUID;
+            var pluginInfo = _plugins[i];
             var plugin = (BasePlugin)_plugins[i].Instance;
-
-            if (!plugin.Unload())
+            var assemblyName = plugin.GetType().Assembly.GetName();
+            var pluginName = $"{assemblyName.Name} {assemblyName.Version}";
+            
+            try
             {
-                BloodpebblePlugin.Logger.LogWarning($"Plugin {plugin.GetType().FullName} does not support unloading, skipping...");
+                if (!plugin.Unload())
+                {
+                    BloodpebblePlugin.Logger.LogWarning($"Plugin {pluginName} might not be reloadable. (Plugin.Unload returned false)");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                _bepinexChainloader.Plugins.Remove(pluginGuid);
-                _plugins.RemoveAt(i);
+                BloodpebblePlugin.Logger.LogError($"Error unloading plugin {pluginName}:");
+                BloodpebblePlugin.Logger.LogError(ex);
             }
+            _bepinexChainloader.Plugins.Remove(pluginInfo.Metadata.GUID);
+            _plugins.RemoveAt(i);
         }
         _bepinexChainloader.UnloadAssemblies();
     }
