@@ -42,6 +42,15 @@ User must first be AdminAuth'd (accomplished via console command).
 If [ScarletRCON](https://thunderstore.io/c/v-rising/p/ScarletMods/ScarletRCON/) is installed, bloodpebble will provide an RCON command to reload.
 - `bloodpebble.reloadplugins`
 
+### Disclaimer
+
+Not every plugin is going to be reloadable. You will still have to put some things in the usual BepInEx Plugins folder.
+
+Notes for plugin developers:
+- The assembly must be collectible. [This imposes restrictions.](https://learn.microsoft.com/en-us/dotnet/fundamentals/reflection/collectible-assemblies#restrictions-on-collectible-assemblies)
+- Your plugin should implement the [Unload](https://docs.bepinex.dev/master/api/BepInEx.Unity.IL2CPP.BasePlugin.html) method to release any resources, unregister hooks, etc.
+  - In particular, make sure you cleanup [anything that would affect its lifetime](https://learn.microsoft.com/en-us/dotnet/fundamentals/reflection/collectible-assemblies#lifetime-of-collectible-assemblies).
+
 ### Support
 
 Join the [modding community](https://vrisingmods.com/discord).
