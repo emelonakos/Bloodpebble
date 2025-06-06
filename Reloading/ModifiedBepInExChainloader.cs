@@ -137,6 +137,14 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
                 };
                 Plugins[plugin.Metadata.GUID] = bloodpebblePlugin;
                 TryRunModuleCtor(plugin, assembly);
+
+                var doesMetadataIndicateUnloadable = assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+                    .Where(att => att.Key.ToLowerInvariant().Equals("unloadable"))
+                    .Where(att => att.Value?.ToLowerInvariant().Equals("true") ?? false)
+                    .Any();
+
+                BloodpebblePlugin.Logger.Log(LogLevel.Info, $"{assembly.GetName().Name} metadata indicates unloadable: {doesMetadataIndicateUnloadable}");
+
                 bloodpebblePlugin.Instance = LoadPlugin(plugin, assembly);
                 loadedPlugins.Add(bloodpebblePlugin);
 
