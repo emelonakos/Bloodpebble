@@ -18,7 +18,7 @@ namespace Bloodpebble
         internal static BloodpebblePlugin Instance { get; private set; }
 #nullable enable
         private ConfigEntry<string> _reloadCommand;
-        private ConfigEntry<string> _reloadPluginsFolder;
+        internal ConfigEntry<string> ConfigReloadablePluginsFolder { get; private set; } 
         private ConfigEntry<bool> _enableAutoReload;
         private ConfigEntry<float> _autoReloadDelaySeconds;
 
@@ -27,7 +27,7 @@ namespace Bloodpebble
             BloodpebblePlugin.Logger = Log;
             Instance = this;
             _reloadCommand = Config.Bind("General", "ReloadCommand", "!reload", "Server chat command to reload plugins. User must first be AdminAuth'd (accomplished via console command).");
-            _reloadPluginsFolder = Config.Bind("General", "ReloadablePluginsFolder", "BepInEx/BloodpebblePlugins", "The folder to (re)load plugins from, relative to the game directory.");
+            ConfigReloadablePluginsFolder = Config.Bind("General", "ReloadablePluginsFolder", "BepInEx/BloodpebblePlugins", "The folder to (re)load plugins from, relative to the game directory."); // CHANGED
             _enableAutoReload = Config.Bind("AutoReload", "EnableAutoReload", true, new ConfigDescription("Automatically reloads all plugins if any of the files get changed (added/removed/modified)."));
             _autoReloadDelaySeconds = Config.Bind("AutoReload", "AutoReloadDelaySeconds", 2.0f, new ConfigDescription("Delay in seconds before auto reloading."));
         }
@@ -43,7 +43,7 @@ namespace Bloodpebble
             Hooks.OnInitialize.Initialize();
 
             Logger.LogInfo($"Bloodpebble v{MyPluginInfo.PLUGIN_VERSION} loaded.");
-            Reload.Initialize(_reloadCommand.Value, _reloadPluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value);
+            Reload.Initialize(_reloadCommand.Value, ConfigReloadablePluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value); // CHANGED
 
             RconCommandRegistrar.RegisterAll();
         }
