@@ -13,6 +13,13 @@ using System.Runtime.Loader;
 
 namespace Bloodpebble.Reloading
 {
+    // Extension of the BepInEx chainloader.
+    //
+    // Unfortunately, their chainloader is pretty locked-down visibility wise.
+    // So we have some copy/paste/modified stuff in here, where inheritence isn't possible.
+    //
+    // We're also using our own extended PluginInfo in some places,
+    // where we need to set fields, but bepinex has them set to internal visibility.
     class ModifiedBepInExChainloader : IL2CPPChainloader
     {
         private readonly BaseAssemblyResolver _assemblyResolver;
@@ -43,7 +50,7 @@ namespace Bloodpebble.Reloading
         /// <returns>A sorted list of plugins.</returns>
         public IEnumerable<BepInEx.PluginInfo> SortPluginList(IEnumerable<BepInEx.PluginInfo> plugins)
         {
-           
+
             return ModifyLoadOrder(plugins.ToList());
         }
 
@@ -52,7 +59,7 @@ namespace Bloodpebble.Reloading
             try
             {
                 BloodpebblePlugin.Logger.Log(LogLevel.Info, $"Loading [{plugin}]");
-
+                // Create and load a copy of the assembly, to prevent filesystem locks on the things we want to hot reload
                 using var dll = AssemblyDefinition.ReadAssembly(plugin.Location, new() { AssemblyResolver = _assemblyResolver });
                 using var ms = new MemoryStream();
                 dll.Write(ms);
@@ -89,13 +96,14 @@ namespace Bloodpebble.Reloading
             _assemblyResolver.RemoveSearchDirectory(pluginsPath);
         }
 
+        // copied from the BaseChainloader, since that has private visibility
         protected static void TryRunModuleCtor(BepInEx.PluginInfo plugin, Assembly assembly)
         {
             try
             {
-#pragma warning disable CS8602
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 RuntimeHelpers.RunModuleConstructor(assembly.GetType(plugin.TypeName).Module.ModuleHandle);
-#pragma warning restore CS8602
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
             }
             catch (Exception e)
             {
