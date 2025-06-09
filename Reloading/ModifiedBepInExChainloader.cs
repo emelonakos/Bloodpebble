@@ -11,85 +11,97 @@ using Mono.Cecil;
 using BepInEx.Bootstrap;
 using System.Runtime.Loader;
 
-namespace Bloodpebble.Reloading;
-
-class ModifiedBepInExChainloader : IL2CPPChainloader
+namespace Bloodpebble.Reloading
 {
-    private readonly BaseAssemblyResolver _assemblyResolver;
-
-    public ModifiedBepInExChainloader()
+    class ModifiedBepInExChainloader : IL2CPPChainloader
     {
-        _assemblyResolver = new DefaultAssemblyResolver();
-        _assemblyResolver.AddSearchDirectory(Paths.ManagedPath);
-        _assemblyResolver.AddSearchDirectory(Paths.BepInExAssemblyDirectory);
-        _assemblyResolver.AddSearchDirectory(Path.Combine(Paths.BepInExRootPath, "interop"));
-    }
+        private readonly BaseAssemblyResolver _assemblyResolver;
 
-    public List<BepInEx.PluginInfo> DiscoverAndSortPlugins(string pluginsPath)
-    {
-        var discovered = DiscoverPluginsFrom(pluginsPath).ToList();
-        if (discovered.Any())
+        public ModifiedBepInExChainloader()
         {
-            _assemblyResolver.AddSearchDirectory(pluginsPath);
+            _assemblyResolver = new DefaultAssemblyResolver();
+            _assemblyResolver.AddSearchDirectory(Paths.ManagedPath);
+            _assemblyResolver.AddSearchDirectory(Paths.BepInExAssemblyDirectory);
+            _assemblyResolver.AddSearchDirectory(Path.Combine(Paths.BepInExRootPath, "interop"));
         }
-        var sortedList = ModifyLoadOrder(discovered);
-        return sortedList.ToList(); 
-    }
 
-    public PluginInfo LoadPlugin(BepInEx.PluginInfo plugin, AssemblyLoadContext context, out Assembly assembly)
-    {
-        try
+        public List<BepInEx.PluginInfo> DiscoverAndSortPlugins(string pluginsPath)
         {
-            BloodpebblePlugin.Logger.Log(LogLevel.Info, $"Loading [{plugin}]");
-
-            using var dll = AssemblyDefinition.ReadAssembly(plugin.Location, new() { AssemblyResolver = _assemblyResolver });
-            using var ms = new MemoryStream();
-            dll.Write(ms);
-            ms.Seek(0, SeekOrigin.Begin);
-            assembly = context.LoadFromStream(ms);
-
-            var bloodpebblePlugin = new PluginInfo
+            var discovered = DiscoverPluginsFrom(pluginsPath).ToList();
+            if (discovered.Any())
             {
-                Metadata = plugin.Metadata,
-                Processes = plugin.Processes,
-                Dependencies = plugin.Dependencies,
-                Incompatibilities = plugin.Incompatibilities,
-                Location = plugin.Location,
-                Instance = plugin.Instance,
-                TypeName = plugin.TypeName,
-            };
-            Plugins[plugin.Metadata.GUID] = bloodpebblePlugin;
-            TryRunModuleCtor(plugin, assembly);
-
-            bloodpebblePlugin.Instance = LoadPlugin(plugin, assembly);
-            return bloodpebblePlugin;
+                _assemblyResolver.AddSearchDirectory(pluginsPath);
+            }
+            var sortedList = ModifyLoadOrder(discovered);
+            return sortedList.ToList();
         }
-        catch (Exception ex)
+
+        /// <summary>
+        /// A public bridge to access the protected plugin sorting utility.
+        /// </summary>
+        /// <param name="plugins">A list of plugins to sort by dependency.</param>
+        /// <returns>A sorted list of plugins.</returns>
+        public IEnumerable<BepInEx.PluginInfo> SortPluginList(IEnumerable<BepInEx.PluginInfo> plugins)
         {
-            Plugins.Remove(plugin.Metadata.GUID);
-            BloodpebblePlugin.Logger.Log(LogLevel.Error,
-                $"Error loading [{plugin}]: {(ex is ReflectionTypeLoadException re ? TypeLoader.TypeLoadExceptionToString(re) : ex.ToString())}");
-            throw;
+           
+            return ModifyLoadOrder(plugins.ToList());
         }
-    }
 
-    public void RemoveSearchDirectory(string pluginsPath)
-    {
-        _assemblyResolver.RemoveSearchDirectory(pluginsPath);
-    }
-
-    protected static void TryRunModuleCtor(BepInEx.PluginInfo plugin, Assembly assembly)
-    {
-        try
+        public PluginInfo LoadPlugin(BepInEx.PluginInfo plugin, AssemblyLoadContext context, out Assembly assembly)
         {
+            try
+            {
+                BloodpebblePlugin.Logger.Log(LogLevel.Info, $"Loading [{plugin}]");
+
+                using var dll = AssemblyDefinition.ReadAssembly(plugin.Location, new() { AssemblyResolver = _assemblyResolver });
+                using var ms = new MemoryStream();
+                dll.Write(ms);
+                ms.Seek(0, SeekOrigin.Begin);
+                assembly = context.LoadFromStream(ms);
+
+                var bloodpebblePlugin = new PluginInfo
+                {
+                    Metadata = plugin.Metadata,
+                    Processes = plugin.Processes,
+                    Dependencies = plugin.Dependencies,
+                    Incompatibilities = plugin.Incompatibilities,
+                    Location = plugin.Location,
+                    Instance = plugin.Instance,
+                    TypeName = plugin.TypeName,
+                };
+                Plugins[plugin.Metadata.GUID] = bloodpebblePlugin;
+                TryRunModuleCtor(plugin, assembly);
+
+                bloodpebblePlugin.Instance = base.LoadPlugin(plugin, assembly);
+                return bloodpebblePlugin;
+            }
+            catch (Exception ex)
+            {
+                Plugins.Remove(plugin.Metadata.GUID);
+                BloodpebblePlugin.Logger.Log(LogLevel.Error,
+                    $"Error loading [{plugin}]: {(ex is ReflectionTypeLoadException re ? TypeLoader.TypeLoadExceptionToString(re) : ex.ToString())}");
+                throw;
+            }
+        }
+
+        public void RemoveSearchDirectory(string pluginsPath)
+        {
+            _assemblyResolver.RemoveSearchDirectory(pluginsPath);
+        }
+
+        protected static void TryRunModuleCtor(BepInEx.PluginInfo plugin, Assembly assembly)
+        {
+            try
+            {
 #pragma warning disable CS8602
-            RuntimeHelpers.RunModuleConstructor(assembly.GetType(plugin.TypeName).Module.ModuleHandle);
+                RuntimeHelpers.RunModuleConstructor(assembly.GetType(plugin.TypeName).Module.ModuleHandle);
 #pragma warning restore CS8602
-        }
-        catch (Exception e)
-        {
-            BloodpebblePlugin.Logger.Log(LogLevel.Warning,
-                $"Couldn't run Module constructor for {assembly.FullName}::{plugin.TypeName}: {e}");
+            }
+            catch (Exception e)
+            {
+                BloodpebblePlugin.Logger.Log(LogLevel.Warning,
+                    $"Couldn't run Module constructor for {assembly.FullName}::{plugin.TypeName}: {e}");
+            }
         }
     }
 }

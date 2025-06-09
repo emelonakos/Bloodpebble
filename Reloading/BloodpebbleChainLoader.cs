@@ -1,124 +1,231 @@
+using BepInEx;
+using BepInEx.Unity.IL2CPP;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BepInEx;
-using BepInEx.Unity.IL2CPP;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace Bloodpebble.Reloading;
-
-class BloodpebbleChainloader
+namespace Bloodpebble.Reloading
 {
-    private readonly Dictionary<string, (PluginInfo Plugin, AssemblyLoadContext Context)> _plugins = new();
-    private readonly ModifiedBepInExChainloader _bepinexChainloader = new();
-
-    public IList<PluginInfo> LoadPlugins(string pluginsPath)
+    class BloodpebbleChainloader
     {
-        var normalPlugins = IL2CPPChainloader.Instance.Plugins;
-        normalPlugins.ToList().ForEach(x => _bepinexChainloader.Plugins[x.Key] = x.Value);
+        private readonly Dictionary<string, AssemblyLoadContext> _pluginToContextMap = new();
+        private readonly Dictionary<string, PluginInfo> _loadedPlugins = new();
 
-        var sortedPlugins = _bepinexChainloader.DiscoverAndSortPlugins(pluginsPath);
+        private ModifiedBepInExChainloader _bepinexChainloader = new();
 
-        var newlyLoaded = new List<PluginInfo>();
-        foreach (var pluginInfo in sortedPlugins)
+        public IList<PluginInfo> LoadPlugins(string pluginsPath)
         {
-            try
+            UnloadPlugins();
+            _bepinexChainloader = new ModifiedBepInExChainloader();
+
+            var allPluginInfos = _bepinexChainloader.DiscoverAndSortPlugins(pluginsPath);
+            var graph = BuildDependencyGraph(allPluginInfos);
+            var pluginGroups = FindPluginGroups(allPluginInfos, graph);
+
+            var newlyLoaded = new List<PluginInfo>();
+            foreach (var group in pluginGroups)
             {
-                var context = new AssemblyLoadContext(pluginInfo.Metadata.GUID, isCollectible: true);
-                var loadedPlugin = _bepinexChainloader.LoadPlugin(pluginInfo, context, out _);
-                _plugins[loadedPlugin.Metadata.GUID] = (loadedPlugin, context);
+                try
+                {
+                    var loadedGroupPlugins = LoadGroup(group);
+                    newlyLoaded.AddRange(loadedGroupPlugins);
+                }
+                catch (Exception ex)
+                {
+                    BloodpebblePlugin.Logger.LogError($"Failed to load a plugin group. Halting further loading. Error: {ex.Message}");
+                    UnloadPlugins();
+                    return new List<PluginInfo>();
+                }
+            }
+            return newlyLoaded;
+        }
+
+        private List<PluginInfo> LoadGroup(List<BepInEx.PluginInfo> groupPlugins)
+        {
+            var newlyLoaded = new List<PluginInfo>();
+            var sortedGroupPlugins = _bepinexChainloader.SortPluginList(groupPlugins);
+            var groupContext = new AssemblyLoadContext($"BloodpebbleGroup-{Guid.NewGuid()}", isCollectible: true);
+            var loadedAssembliesInContext = new Dictionary<string, Assembly>();
+
+            groupContext.Resolving += (context, assemblyName) =>
+            {
+                if (loadedAssembliesInContext.TryGetValue(assemblyName.Name, out var foundAssembly))
+                {
+                    return foundAssembly;
+                }
+                return null;
+            };
+
+            foreach (var pluginInfo in sortedGroupPlugins)
+            {
+                var loadedPlugin = _bepinexChainloader.LoadPlugin(pluginInfo, groupContext, out var assembly);
+                _loadedPlugins[loadedPlugin.Metadata.GUID] = loadedPlugin;
+                _pluginToContextMap[loadedPlugin.Metadata.GUID] = groupContext;
+                loadedAssembliesInContext[assembly.GetName().Name] = assembly;
                 newlyLoaded.Add(loadedPlugin);
             }
-            catch (Exception e)
+
+            BloodpebblePlugin.Logger.LogInfo($"Successfully loaded plugin group with plugins: {string.Join(", ", newlyLoaded.Select(p => p.Metadata.Name))}");
+            return newlyLoaded;
+        }
+
+        public void UnloadPlugins()
+        {
+            foreach (var pluginInfo in _loadedPlugins.Values)
             {
-                BloodpebblePlugin.Logger.LogError($"Failed to load plugin {pluginInfo.Metadata.Name}: {e.Message}");
+                try { (pluginInfo.Instance as BasePlugin)?.Unload(); }
+                catch (Exception ex) { BloodpebblePlugin.Logger.LogError(ex); }
+            }
+
+            var allContexts = _pluginToContextMap.Values.Distinct().ToList();
+            if (!allContexts.Any()) return;
+
+            foreach (var context in allContexts)
+            {
+                context.Unload();
+            }
+
+            _pluginToContextMap.Clear();
+            _loadedPlugins.Clear();
+            _bepinexChainloader.Plugins.Clear(); 
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            BloodpebblePlugin.Logger.LogInfo("All reloadable plugins have been unloaded.");
+        }
+
+        public PluginInfo? ReloadPlugin(string guid)
+        {
+            if (!_pluginToContextMap.TryGetValue(guid, out var contextToUnload))
+            {
+                BloodpebblePlugin.Logger.LogError($"Cannot reload plugin with GUID '{guid}' because it is not loaded.");
+                return null;
+            }
+
+            var groupToReload = _loadedPlugins.Values
+                .Where(p => _pluginToContextMap.ContainsKey(p.Metadata.GUID) && _pluginToContextMap[p.Metadata.GUID] == contextToUnload)
+                .ToList();
+
+            var groupGuids = groupToReload.Select(p => p.Metadata.GUID).ToList();
+            var groupFilePaths = groupToReload.Select(p => p.Location).ToList();
+
+            BloodpebblePlugin.Logger.LogInfo($"Reload request for '{guid}'. Unloading its group: {string.Join(", ", groupGuids)}");
+
+            foreach (var pluginInfo in groupToReload)
+            {
+                try { (pluginInfo.Instance as BasePlugin)?.Unload(); }
+                catch (Exception ex) { BloodpebblePlugin.Logger.LogError(ex); }
+            }
+
+            contextToUnload.Unload();
+
+            foreach (var pluginGuid in groupGuids)
+            {
+                _pluginToContextMap.Remove(pluginGuid);
+                _loadedPlugins.Remove(pluginGuid);
+
+                _bepinexChainloader.Plugins.Remove(pluginGuid);
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            var tempReloadDir = Path.Combine(Path.GetTempPath(), $"BloodpebbleReload-{Guid.NewGuid()}");
+            Directory.CreateDirectory(tempReloadDir);
+
+            try
+            {
+                foreach (var path in groupFilePaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        File.Copy(path, Path.Combine(tempReloadDir, Path.GetFileName(path)));
+                    }
+                }
+
+                var reloadDiscoverer = new ModifiedBepInExChainloader();
+                var freshPluginInfos = reloadDiscoverer.DiscoverAndSortPlugins(tempReloadDir);
+
+                BloodpebblePlugin.Logger.LogInfo($"Reloading group for '{guid}' from temporary location...");
+
+                var reloadedGroup = LoadGroup(freshPluginInfos);
+                return reloadedGroup.FirstOrDefault(p => p.Metadata.GUID == guid);
+            }
+            finally
+            {
+                if (Directory.Exists(tempReloadDir))
+                {
+                    Directory.Delete(tempReloadDir, true);
+                }
             }
         }
 
-        return newlyLoaded;
-    }
-
-    public void UnloadPlugins()
-    {
-        var guids = _plugins.Keys.Reverse().ToList();
-        foreach (var guid in guids)
+        private Dictionary<string, List<string>> BuildDependencyGraph(IEnumerable<BepInEx.PluginInfo> plugins)
         {
-            UnloadPlugin(guid);
-        }
-        _bepinexChainloader.RemoveSearchDirectory(BloodpebblePlugin.Instance.ConfigReloadablePluginsFolder.Value);
-    }
+            var graph = new Dictionary<string, List<string>>();
+            var pluginGuids = new HashSet<string>(plugins.Select(p => p.Metadata.GUID));
 
-    public void UnloadPlugin(string guid)
-    {
-        if (!_plugins.TryGetValue(guid, out var value)) return;
-
-        var (pluginInfo, context) = value;
-        var plugin = (BasePlugin)pluginInfo.Instance;
-        var assemblyName = plugin.GetType().Assembly.GetName();
-        var pluginName = $"{assemblyName.Name} {assemblyName.Version}";
-
-        try
-        {
-            if (!plugin.Unload())
+            foreach (var plugin in plugins)
             {
-                BloodpebblePlugin.Logger.LogWarning($"Plugin {pluginName} might not be reloadable. (Plugin.Unload returned false)");
+                if (!graph.ContainsKey(plugin.Metadata.GUID))
+                    graph[plugin.Metadata.GUID] = new List<string>();
+
+                foreach (var dep in plugin.Dependencies)
+                {
+                    if (pluginGuids.Contains(dep.DependencyGUID))
+                    {
+                        graph[plugin.Metadata.GUID].Add(dep.DependencyGUID);
+                        if (!graph.ContainsKey(dep.DependencyGUID))
+                            graph[dep.DependencyGUID] = new List<string>();
+                        graph[dep.DependencyGUID].Add(plugin.Metadata.GUID);
+                    }
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            BloodpebblePlugin.Logger.LogError($"Error unloading plugin {pluginName}:");
-            BloodpebblePlugin.Logger.LogError(ex);
+            return graph;
         }
 
-        _bepinexChainloader.Plugins.Remove(pluginInfo.Metadata.GUID);
-        _plugins.Remove(guid);
-
-        context.Unload();
-    }
-
-    public PluginInfo? ReloadPlugin(string guid)
-    {
-        if (!_plugins.TryGetValue(guid, out var value))
+        private List<List<BepInEx.PluginInfo>> FindPluginGroups(IEnumerable<BepInEx.PluginInfo> plugins, Dictionary<string, List<string>> graph)
         {
-            BloodpebblePlugin.Logger.LogError($"Cannot reload plugin with GUID '{guid}' because it is not loaded.");
-            return null;
-        }
+            var groups = new List<List<BepInEx.PluginInfo>>();
+            var visited = new HashSet<string>();
+            var pluginDict = plugins.ToDictionary(p => p.Metadata.GUID);
 
-        var pluginPath = value.Plugin.Location;
-        BloodpebblePlugin.Logger.LogInfo($"Attempting to reload plugin: {guid}");
+            foreach (var plugin in plugins)
+            {
+                if (visited.Contains(plugin.Metadata.GUID)) continue;
 
-        UnloadPlugin(guid);
+                var currentGroupGuids = new HashSet<string>();
+                var stack = new Stack<string>();
+                stack.Push(plugin.Metadata.GUID);
+                visited.Add(plugin.Metadata.GUID);
 
-        var pluginDirectory = Path.GetDirectoryName(pluginPath);
-        if (pluginDirectory == null)
-        {
-            BloodpebblePlugin.Logger.LogError($"Could not determine directory for plugin GUID '{guid}'.");
-            return null;
-        }
+                while (stack.Count > 0)
+                {
+                    var currentGuid = stack.Pop();
+                    currentGroupGuids.Add(currentGuid);
 
-        var sortedPlugins = _bepinexChainloader.DiscoverAndSortPlugins(pluginDirectory);
-        var pluginToLoad = sortedPlugins.FirstOrDefault(p => p.Metadata.GUID == guid);
+                    if (graph.TryGetValue(currentGuid, out var neighbors))
+                    {
+                        foreach (var neighbor in neighbors)
+                        {
+                            if (!visited.Contains(neighbor))
+                            {
+                                visited.Add(neighbor);
+                                stack.Push(neighbor);
+                            }
+                        }
+                    }
+                }
 
-        if (pluginToLoad == null)
-        {
-            BloodpebblePlugin.Logger.LogError($"Could not find plugin file for GUID '{guid}'. A dependency may be missing.");
-            return null;
-        }
+                var currentGroup = currentGroupGuids.Select(guid => pluginDict[guid]).ToList();
+                groups.Add(currentGroup);
+            }
 
-        try
-        {
-            var context = new AssemblyLoadContext(guid, isCollectible: true);
-            var loadedPlugin = _bepinexChainloader.LoadPlugin(pluginToLoad, context, out _);
-            _plugins[guid] = (loadedPlugin, context);
-            BloodpebblePlugin.Logger.LogInfo($"Successfully reloaded {loadedPlugin.Metadata.Name}.");
-            return loadedPlugin;
-        }
-        catch (Exception e)
-        {
-            BloodpebblePlugin.Logger.LogError($"Failed to reload plugin {guid}: {e.Message}");
-            return null;
+            return groups;
         }
     }
 }
