@@ -6,7 +6,7 @@ namespace Bloodpebble.Reloading;
 
 #nullable disable
 
-// workaround to let us do things normally restricted to BepInEx internals
+// workaround to let us do things normally restricted to BepInEx internals. e.g. setting properties
 class PluginInfo : BepInEx.PluginInfo
 {
     /// <summary>

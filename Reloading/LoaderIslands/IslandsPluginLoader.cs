@@ -2,23 +2,55 @@ using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace Bloodpebble.Reloading
+namespace Bloodpebble.Reloading.LoaderIslands
 {
-    class BloodpebbleChainloader
+    // Groups plugins into islands. Each island has its own AssemblyLoadContext.
+    // Reloading a plugin in an island reloads every plugin in that island.
+    class IslandsPluginLoader : IPluginLoader
     {
         private readonly Dictionary<string, AssemblyLoadContext> _pluginToContextMap = new();
         private readonly Dictionary<string, PluginInfo> _loadedPlugins = new();
 
         private ModifiedBepInExChainloader _bepinexChainloader = new();
+        private PluginLoaderConfig _config;
+
+        public IslandsPluginLoader(PluginLoaderConfig config)
+        {
+            _config = config;
+        }
+
+        public IList<PluginInfo> ReloadAll()
+        {
+            return LoadPlugins(_config.PluginsPath);
+        }
+
+        public IList<PluginInfo> ReloadGiven(IEnumerable<string> pluginGUIDs)
+        {
+            if (pluginGUIDs.Count() == 1)
+            {
+                List <PluginInfo> freshPlugins = new();
+                if (TryReloadPlugin(pluginGUIDs.First(), out var freshPlugin))
+                {
+                    freshPlugins.Add(freshPlugin);
+                }
+                return freshPlugins;
+            }
+            else
+            {
+                // this could be improved
+                return ReloadAll();
+            }
+        }
 
         public IList<PluginInfo> LoadPlugins(string pluginsPath)
         {
-            UnloadPlugins();
+            UnloadAll();
             _bepinexChainloader = new ModifiedBepInExChainloader();
 
             var allPluginInfos = _bepinexChainloader.DiscoverAndSortPlugins(pluginsPath);
@@ -36,7 +68,7 @@ namespace Bloodpebble.Reloading
                 catch (Exception ex)
                 {
                     BloodpebblePlugin.Logger.LogError($"Failed to load a plugin group. Halting further loading. Error: {ex.Message}");
-                    UnloadPlugins();
+                    UnloadAll();
                     return new List<PluginInfo>();
                 }
             }
@@ -72,7 +104,7 @@ namespace Bloodpebble.Reloading
             return newlyLoaded;
         }
 
-        public void UnloadPlugins()
+        public void UnloadAll()
         {
             foreach (var pluginInfo in _loadedPlugins.Values)
             {
@@ -90,7 +122,7 @@ namespace Bloodpebble.Reloading
 
             _pluginToContextMap.Clear();
             _loadedPlugins.Clear();
-            _bepinexChainloader.Plugins.Clear(); 
+            _bepinexChainloader.Plugins.Clear();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -98,12 +130,13 @@ namespace Bloodpebble.Reloading
             BloodpebblePlugin.Logger.LogInfo("All reloadable plugins have been unloaded.");
         }
 
-        public PluginInfo? ReloadPlugin(string guid)
+        public bool TryReloadPlugin(string guid, [MaybeNullWhen(false)] out PluginInfo freshPlugin)
         {
+            freshPlugin = null;
             if (!_pluginToContextMap.TryGetValue(guid, out var contextToUnload))
             {
                 BloodpebblePlugin.Logger.LogError($"Cannot reload plugin with GUID '{guid}' because it is not loaded.");
-                return null;
+                return false;
             }
 
             var groupToReload = _loadedPlugins.Values
@@ -117,8 +150,14 @@ namespace Bloodpebble.Reloading
 
             foreach (var pluginInfo in groupToReload)
             {
-                try { (pluginInfo.Instance as BasePlugin)?.Unload(); }
-                catch (Exception ex) { BloodpebblePlugin.Logger.LogError(ex); }
+                try
+                {
+                    (pluginInfo.Instance as BasePlugin)?.Unload();
+                }
+                catch (Exception ex)
+                {
+                    BloodpebblePlugin.Logger.LogError(ex);
+                }
             }
 
             contextToUnload.Unload();
@@ -153,7 +192,8 @@ namespace Bloodpebble.Reloading
                 BloodpebblePlugin.Logger.LogInfo($"Reloading group for '{guid}' from temporary location...");
 
                 var reloadedGroup = LoadGroup(freshPluginInfos);
-                return reloadedGroup.FirstOrDefault(p => p.Metadata.GUID == guid);
+                freshPlugin = reloadedGroup.FirstOrDefault(p => p.Metadata.GUID == guid);
+                return freshPlugin is not null;
             }
             finally
             {
@@ -227,5 +267,6 @@ namespace Bloodpebble.Reloading
 
             return groups;
         }
+
     }
 }

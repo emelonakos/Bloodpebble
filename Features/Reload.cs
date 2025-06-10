@@ -6,9 +6,13 @@ using Bloodpebble.Hooks;
 using Bloodpebble.Reloading;
 using Bloodpebble.Extensions;
 using ScarletRCON.Shared;
+using Bloodpebble.Reloading.LoaderIslands;
 
 namespace Bloodpebble.Features;
 
+
+// todo: make this a "good" singleton with a static instance
+//   currently has too many situations where this that or the other thing might not have been defined
 public static class Reload
 {
 #nullable disable
@@ -22,13 +26,16 @@ public static class Reload
     private static KeyCode _keybinding = KeyCode.F6;
     private static bool _isPendingAutoReload = false;
     private static float autoReloadTimer;
-    private static BloodpebbleChainloader _chainloader = new();
+    private static IPluginLoader _pluginLoader;
 
     internal static void Initialize(string reloadCommand, string reloadPluginsFolder, bool enableAutoReload, float autoReloadDelaySeconds)
     {
         _reloadCommand = reloadCommand;
         _reloadPluginsFolder = reloadPluginsFolder;
         _autoReloadDelaySeconds = autoReloadDelaySeconds;
+
+        var loaderConfig = new PluginLoaderConfig(reloadPluginsFolder);
+        _pluginLoader = new IslandsPluginLoader(loaderConfig);
 
         // note: no need to remove this on unload, since we'll unload the hook itself anyway
         Chat.OnChatMessage += HandleChatMessage;
@@ -56,46 +63,56 @@ public static class Reload
 
     private static void HandleChatMessage(VChatEvent ev)
     {
-        var parts = ev.Message.Split(' ');
-        var command = parts[0];
+        var msgParts = ev.Message.Split(' ');
+        var command = msgParts[0];
 
         if (command != _reloadCommand && command != $"{_reloadCommand}one") return;
-        if (!ev.User.IsAdmin) return; 
+        if (!ev.User.IsAdmin) return;
 
         ev.Cancel();
 
         if (command == _reloadCommand)
         {
-            UnloadPlugins();
-            var loadedPlugins = LoadPlugins();
-
-            if (loadedPlugins.Count > 0)
-            {
-                var pluginNames = loadedPlugins.Select(plugin => plugin.Metadata.Name);
-                ev.User.SendSystemMessage($"Reloaded {string.Join(", ", pluginNames)}. See console for details.");
-            }
-            else
-            {
-                ev.User.SendSystemMessage($"Did not reload any plugins because no reloadable plugins were found.");
-            }
+            ChatCommandReloadAll(ev);
         }
         else if (command == $"{_reloadCommand}one")
         {
-            if (parts.Length < 2)
-            {
-                ev.User.SendSystemMessage($"Usage: {_reloadCommand}one <PluginGUID>");
-                return;
-            }
-            var guid = parts[1];
-            var reloadedPlugin = _chainloader.ReloadPlugin(guid);
-            if (reloadedPlugin != null)
-            {
-                ev.User.SendSystemMessage($"Reloaded plugin: {reloadedPlugin.Metadata.Name} ({reloadedPlugin.Metadata.GUID})");
-            }
-            else
-            {
-                ev.User.SendSystemMessage($"Failed to reload plugin with GUID: {guid}. Check console for details.");
-            }
+            ChatCommandReloadOne(ev, msgParts);
+        }
+    }
+
+    private static void ChatCommandReloadAll(VChatEvent ev)
+    {
+        _pluginLoader.UnloadAll();
+        var loadedPlugins = LoadPlugins();
+
+        if (loadedPlugins.Count > 0)
+        {
+            var pluginNames = loadedPlugins.Select(plugin => plugin.Metadata.Name);
+            ev.User.SendSystemMessage($"Reloaded {string.Join(", ", pluginNames)}. See console for details.");
+        }
+        else
+        {
+            ev.User.SendSystemMessage($"Did not reload any plugins because no reloadable plugins were found.");
+        }
+    }
+
+    private static void ChatCommandReloadOne(VChatEvent ev, string[] msgParts)
+    {
+        if (msgParts.Length < 2)
+        {
+            ev.User.SendSystemMessage($"Usage: {_reloadCommand}one <PluginGUID>");
+            return;
+        }
+
+        var guid = msgParts[1];
+        if (_pluginLoader.TryReloadPlugin(guid, out var reloadedPlugin))
+        {
+            ev.User.SendSystemMessage($"Reloaded plugin: {reloadedPlugin.Metadata.Name} ({reloadedPlugin.Metadata.GUID})");
+        }
+        else
+        {
+            ev.User.SendSystemMessage($"Failed to reload plugin with GUID: {guid}. Check console for details.");
         }
     }
 
@@ -105,17 +122,12 @@ public static class Reload
         {
             Directory.CreateDirectory(_reloadPluginsFolder);
         }
-        return _chainloader.LoadPlugins(_reloadPluginsFolder);
-    }
-
-    private static void UnloadPlugins()
-    {
-        _chainloader.UnloadPlugins();
+        return _pluginLoader.ReloadAll();
     }
 
     private static void ReloadPlugins()
     {
-        UnloadPlugins();
+        _pluginLoader.UnloadAll();
         var loadedPlugins = LoadPlugins();
 
         if (loadedPlugins.Count > 0)
@@ -190,8 +202,7 @@ public static class Reload
             }
 
             BloodpebblePlugin.Logger.LogInfo($"Reloading plugin {guid} (triggered by RCON)...");
-            var reloadedPlugin = _chainloader.ReloadPlugin(guid);
-            if (reloadedPlugin != null)
+            if (_pluginLoader.TryReloadPlugin(guid, out var reloadedPlugin))
             {
                 return $"Reloaded plugin: {reloadedPlugin.Metadata.Name}";
             }
@@ -201,4 +212,5 @@ public static class Reload
             }
         }
     }
+
 }

@@ -7,6 +7,12 @@ using Bloodpebble.Utils;
 
 namespace Bloodpebble.Hooks;
 
+
+// TODO: I think we can get rid of this (leftover from bloodstone).
+// Bloodstone has some interface that has to be used,
+// but we don't want to force any kind of dependency like that.
+// There are other ways for plugins to defer initialization, e.g. via the HookDOTs lib.
+
 /// <summary>
 /// Hook responsible for handling calls to IRunOnInitialized.
 /// </summary>
