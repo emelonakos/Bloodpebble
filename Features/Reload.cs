@@ -29,24 +29,12 @@ public static class Reload
     private static float autoReloadTimer;
     private static IPluginLoader _pluginLoader;
 
-    internal static void Initialize(string reloadCommand, string reloadPluginsFolder, bool enableAutoReload, float autoReloadDelaySeconds, string loaderType = "islands")
+    internal static void Initialize(IPluginLoader pluginLoader, string reloadCommand, string reloadPluginsFolder, bool enableAutoReload, float autoReloadDelaySeconds)
     {
         _reloadCommand = reloadCommand;
         _reloadPluginsFolder = reloadPluginsFolder;
         _autoReloadDelaySeconds = autoReloadDelaySeconds;
-
-        var loaderConfig = new PluginLoaderConfig(reloadPluginsFolder);
-        switch (loaderType.ToLowerInvariant())
-        {
-            case "islands":
-                _pluginLoader = new IslandsPluginLoader(loaderConfig);
-                break;
-
-            default: // default to basic
-            case "basic":
-                _pluginLoader = new BasicPluginLoader(loaderConfig);
-                break;
-        }
+        _pluginLoader = pluginLoader;
 
         // note: no need to remove this on unload, since we'll unload the hook itself anyway
         Chat.OnChatMessage += HandleChatMessage;

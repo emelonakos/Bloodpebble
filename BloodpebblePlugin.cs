@@ -5,6 +5,9 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using Bloodpebble.Features;
+using Bloodpebble.Reloading;
+using Bloodpebble.Reloading.LoaderBasic;
+using Bloodpebble.Reloading.LoaderIslands;
 using Bloodpebble.Utils;
 using ScarletRCON.Shared;
 
@@ -33,23 +36,19 @@ namespace Bloodpebble
 
         public override void Load()
         {
-            // Hooks
             if (VWorld.IsServer)
             {
                 Hooks.Chat.Initialize();
             }
-
-            Logger.LogInfo($"Bloodpebble v{MyPluginInfo.PLUGIN_VERSION} loaded.");
-            Reload.Initialize(_reloadCommand.Value, _pluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value, _loadingStrategy.Value);
-
+            InitReload();
             RconCommandRegistrar.RegisterAll();
+            Logger.LogInfo($"Bloodpebble v{MyPluginInfo.PLUGIN_VERSION} loaded.");
         }
 
         public override bool Unload()
         {
             RconCommandRegistrar.UnregisterAssembly();
 
-            // Hooks
             if (VWorld.IsServer)
             {
                 Hooks.Chat.Uninitialize();
@@ -89,6 +88,24 @@ namespace Bloodpebble
                 defaultValue: "Basic",
                 configDescription: new ConfigDescription(loaderDescription, new AcceptableValueList<string>("Basic", "Islands"))
             );
+        }
+
+        private void InitReload()
+        {
+            var loaderConfig = new PluginLoaderConfig(_pluginsFolder.Value);
+            IPluginLoader pluginLoader;
+            switch (_loadingStrategy.Value.ToLowerInvariant())
+            {
+                case "islands":
+                    pluginLoader = new IslandsPluginLoader(loaderConfig);
+                    break;
+
+                default: // default to basic
+                case "basic":
+                    pluginLoader = new BasicPluginLoader(loaderConfig);
+                    break;
+            }
+            Reload.Initialize(pluginLoader, _reloadCommand.Value, _pluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value);
         }
         
     }
