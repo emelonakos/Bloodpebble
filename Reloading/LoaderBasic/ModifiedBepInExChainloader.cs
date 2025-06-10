@@ -143,11 +143,11 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
                 TryRunModuleCtor(plugin, assembly);
 
                 var doesMetadataIndicateUnloadable = assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
-                    .Where(att => att.Key.ToLowerInvariant().Equals("unloadable"))
+                    .Where(att => att.Key.ToLowerInvariant().Equals("reloadable"))
                     .Where(att => att.Value?.ToLowerInvariant().Equals("true") ?? false)
                     .Any();
 
-                BloodpebblePlugin.Logger.Log(LogLevel.Info, $"{assembly.GetName().Name} metadata indicates unloadable: {doesMetadataIndicateUnloadable}");
+                BloodpebblePlugin.Logger.Log(LogLevel.Info, $"{assembly.GetName().Name} metadata indicates reloadable: {doesMetadataIndicateUnloadable}");
 
                 bloodpebblePlugin.Instance = LoadPlugin(plugin, assembly);
                 loadedPlugins.Add(bloodpebblePlugin);

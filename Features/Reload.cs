@@ -36,7 +36,7 @@ public static class Reload
         _autoReloadDelaySeconds = autoReloadDelaySeconds;
 
         var loaderConfig = new PluginLoaderConfig(reloadPluginsFolder);
-        switch (loaderType)
+        switch (loaderType.ToLowerInvariant())
         {
             case "islands":
                 _pluginLoader = new IslandsPluginLoader(loaderConfig);
