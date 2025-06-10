@@ -10,8 +10,10 @@ using System.Runtime.Loader;
 
 namespace Bloodpebble.Reloading.LoaderIslands
 {
-    // Groups plugins into islands. Each island has its own AssemblyLoadContext.
-    // Reloading a plugin in an island reloads every plugin in that island.
+    /// <summary>
+    ///     Groups plugins into islands. Each island has its own AssemblyLoadContext.
+    ///     Reloading a plugin in an island reloads every plugin in that island.
+    /// </summary>
     class IslandsPluginLoader : IPluginLoader
     {
         private readonly Dictionary<string, AssemblyLoadContext> _pluginToContextMap = new();
@@ -34,7 +36,7 @@ namespace Bloodpebble.Reloading.LoaderIslands
         {
             if (pluginGUIDs.Count() == 1)
             {
-                List <PluginInfo> freshPlugins = new();
+                List<PluginInfo> freshPlugins = new();
                 if (TryReloadPlugin(pluginGUIDs.First(), out var freshPlugin))
                 {
                     freshPlugins.Add(freshPlugin);

@@ -17,7 +17,7 @@ namespace Bloodpebble
         internal static BloodpebblePlugin Instance { get; private set; }
 #nullable enable
         private ConfigEntry<string> _reloadCommand;
-        internal ConfigEntry<string> ConfigReloadablePluginsFolder { get; private set; } 
+        private ConfigEntry<string> _pluginsFolder; 
         private ConfigEntry<bool> _enableAutoReload;
         private ConfigEntry<float> _autoReloadDelaySeconds;
 
@@ -26,9 +26,10 @@ namespace Bloodpebble
             BloodpebblePlugin.Logger = Log;
             Instance = this;
             _reloadCommand = Config.Bind("General", "ReloadCommand", "!reload", "Server chat command to reload plugins. User must first be AdminAuth'd (accomplished via console command).");
-            ConfigReloadablePluginsFolder = Config.Bind("General", "ReloadablePluginsFolder", "BepInEx/BloodpebblePlugins", "The folder to (re)load plugins from, relative to the game directory."); // CHANGED
+            _pluginsFolder = Config.Bind("General", "ReloadablePluginsFolder", "BepInEx/BloodpebblePlugins", "The folder to (re)load plugins from, relative to the game directory.");
             _enableAutoReload = Config.Bind("AutoReload", "EnableAutoReload", true, new ConfigDescription("Automatically reloads all plugins if any of the files get changed (added/removed/modified)."));
             _autoReloadDelaySeconds = Config.Bind("AutoReload", "AutoReloadDelaySeconds", 2.0f, new ConfigDescription("Delay in seconds before auto reloading."));
+            // todo: config option for which loader to use. put some thought into the category/name
         }
 
         public override void Load()
@@ -42,7 +43,7 @@ namespace Bloodpebble
             Hooks.OnInitialize.Initialize();
 
             Logger.LogInfo($"Bloodpebble v{MyPluginInfo.PLUGIN_VERSION} loaded.");
-            Reload.Initialize(_reloadCommand.Value, ConfigReloadablePluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value); // CHANGED
+            Reload.Initialize(_reloadCommand.Value, _pluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value);
 
             RconCommandRegistrar.RegisterAll();
         }
