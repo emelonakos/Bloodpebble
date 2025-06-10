@@ -63,8 +63,6 @@ namespace Bloodpebble
                 Hooks.Chat.Initialize();
             }
 
-            Hooks.OnInitialize.Initialize();
-
             Logger.LogInfo($"Bloodpebble v{MyPluginInfo.PLUGIN_VERSION} loaded.");
             Reload.Initialize(_reloadCommand.Value, _pluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value, _loadingStrategy.Value);
 
@@ -80,9 +78,6 @@ namespace Bloodpebble
             {
                 Hooks.Chat.Uninitialize();
             }
-
-            Hooks.OnInitialize.Uninitialize();
-
             return true;
         }
     }
