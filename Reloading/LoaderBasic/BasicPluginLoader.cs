@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using BepInEx.Unity.IL2CPP;
 using ProjectM;
@@ -40,7 +41,7 @@ class BasicPluginLoader : IPluginLoader
         return ReloadAll();
     }
 
-    public bool TryReloadPlugin(string guid, out PluginInfo? freshPlugin)
+    public bool TryReloadPlugin(string guid, [NotNullWhen(true)] out PluginInfo? freshPlugin)
     {
         // todo: implement
         throw new NotImplementedException();

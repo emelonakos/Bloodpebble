@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Bloodpebble.Reloading;
 
@@ -17,7 +18,7 @@ interface IPluginLoader
     /// <summary>
     ///     (Re)load the given plugin. other plugins (e.g. dependents) can also be reloaded.
     /// </summary>
-    public bool TryReloadPlugin(string guid, out PluginInfo? freshPlugin);
+    public bool TryReloadPlugin(string guid, [NotNullWhen(true)] out PluginInfo? freshPlugin);
 
     // unload all loaded plugins
 
