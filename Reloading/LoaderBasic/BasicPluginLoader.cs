@@ -11,7 +11,7 @@ namespace Bloodpebble.Reloading.LoaderBasic;
 ///     Loads all plugins into a single AssemblyLoadContext.
 ///     Reloading a plugin reloads all plugins.
 /// </summary>
-class BasicPluginLoader : IPluginLoader
+class BasicPluginLoader : BasePluginLoader, IPluginLoader
 {
     private IList<PluginInfo> _plugins = new List<PluginInfo>();
     private ModifiedBepInExChainloader _bepinexChainloader = new();
@@ -33,6 +33,7 @@ class BasicPluginLoader : IPluginLoader
         // load the additional plugins
         var loadedPlugins = _bepinexChainloader.LoadPlugins(_config.PluginsPath);
         _plugins = loadedPlugins;
+        OnReloadedAllPlugins(loadedPlugins);
         return loadedPlugins;
     }
 

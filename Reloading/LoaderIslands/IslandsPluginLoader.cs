@@ -14,7 +14,7 @@ namespace Bloodpebble.Reloading.LoaderIslands
     ///     Groups plugins into islands. Each island has its own AssemblyLoadContext.
     ///     Reloading a plugin in an island reloads every plugin in that island.
     /// </summary>
-    class IslandsPluginLoader : IPluginLoader
+    class IslandsPluginLoader : BasePluginLoader, IPluginLoader
     {
         private readonly Dictionary<string, AssemblyLoadContext> _pluginToContextMap = new();
         private readonly Dictionary<string, PluginInfo> _loadedPlugins = new();
@@ -29,7 +29,9 @@ namespace Bloodpebble.Reloading.LoaderIslands
 
         public IList<PluginInfo> ReloadAll()
         {
-            return LoadPlugins(_config.PluginsPath);
+            var loadedPlugins = LoadPlugins(_config.PluginsPath);
+            OnReloadedAllPlugins(loadedPlugins);
+            return loadedPlugins;
         }
 
         public IList<PluginInfo> ReloadGiven(IEnumerable<string> pluginGUIDs)

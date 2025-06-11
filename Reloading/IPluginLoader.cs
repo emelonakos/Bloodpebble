@@ -1,10 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Bloodpebble.Reloading;
 
-interface IPluginLoader
+interface IPluginLoader : ITriggersPluginLoaderEvents
 {
+
     /// <summary>
     ///     (Re)load all discoverable plugins.
     /// </summary>
@@ -27,4 +29,15 @@ interface IPluginLoader
     /// </summary>
     public void UnloadAll();
 
+}
+
+interface ITriggersPluginLoaderEvents
+{
+    public event EventHandler<ReloadedAllPluginsEventArgs>? ReloadedAllPlugins;
+}
+
+
+internal class ReloadedAllPluginsEventArgs(IList<PluginInfo> LoadedPlugins) : EventArgs
+{
+    internal IList<PluginInfo> LoadedPlugins { get; } = LoadedPlugins;
 }

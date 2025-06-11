@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using BepInEx;
 using BepInEx.Configuration;
@@ -105,7 +106,21 @@ namespace Bloodpebble
                     pluginLoader = new BasicPluginLoader(loaderConfig);
                     break;
             }
+            pluginLoader.ReloadedAllPlugins += HandleReloadedAllPlugins;
             Reload.Initialize(pluginLoader, _reloadCommand.Value, _pluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value);
+        }
+
+        private void HandleReloadedAllPlugins(object? sender, ReloadedAllPluginsEventArgs e)
+        {
+            if (e.LoadedPlugins.Count > 0)
+            {
+                var pluginNames = e.LoadedPlugins.Select(plugin => plugin.Metadata.Name);
+                Log.LogInfo($"Reloaded {string.Join(", ", pluginNames)}.");
+            }
+            else
+            {
+                Log.LogInfo($"Did not reload any plugins.");
+            }
         }
         
     }

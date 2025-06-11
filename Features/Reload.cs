@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -6,8 +5,6 @@ using Bloodpebble.Hooks;
 using Bloodpebble.Reloading;
 using Bloodpebble.Extensions;
 using ScarletRCON.Shared;
-using Bloodpebble.Reloading.LoaderIslands;
-using Bloodpebble.Reloading.LoaderBasic;
 
 namespace Bloodpebble.Features;
 
@@ -41,7 +38,12 @@ public static class Reload
 
         _reloadBehavior = BloodpebblePlugin.Instance.AddComponent<ReloadBehaviour>();
 
-        LoadPlugins();
+        if (!Directory.Exists(_reloadPluginsFolder))
+        {
+            Directory.CreateDirectory(_reloadPluginsFolder);
+        }
+
+        _pluginLoader.ReloadAll();
 
         if (enableAutoReload)
         {
@@ -82,8 +84,7 @@ public static class Reload
 
     private static void ChatCommandReloadAll(VChatEvent ev)
     {
-        _pluginLoader.UnloadAll();
-        var loadedPlugins = LoadPlugins();
+        var loadedPlugins = _pluginLoader.ReloadAll();
 
         if (loadedPlugins.Count > 0)
         {
@@ -115,31 +116,6 @@ public static class Reload
         }
     }
 
-    private static IList<Bloodpebble.Reloading.PluginInfo> LoadPlugins()
-    {
-        if (!Directory.Exists(_reloadPluginsFolder))
-        {
-            Directory.CreateDirectory(_reloadPluginsFolder);
-        }
-        return _pluginLoader.ReloadAll();
-    }
-
-    private static void ReloadPlugins()
-    {
-        _pluginLoader.UnloadAll();
-        var loadedPlugins = LoadPlugins();
-
-        if (loadedPlugins.Count > 0)
-        {
-            var pluginNames = loadedPlugins.Select(plugin => plugin.Metadata.Name);
-            BloodpebblePlugin.Logger.LogInfo($"Reloaded {string.Join(", ", pluginNames)}.");
-        }
-        else
-        {
-            BloodpebblePlugin.Logger.LogInfo($"Did not reload any plugins because no reloadable plugins were found.");
-        }
-    }
-
     private class ReloadBehaviour : UnityEngine.MonoBehaviour
     {
         private void Update()
@@ -147,7 +123,7 @@ public static class Reload
             if (UnityEngine.Input.GetKeyDown(_keybinding))
             {
                 BloodpebblePlugin.Logger.LogInfo("Reloading client plugins...");
-                ReloadPlugins();
+                _pluginLoader.ReloadAll();
                 _isPendingAutoReload = false;
             }
             else if (_isPendingAutoReload)
@@ -157,7 +133,7 @@ public static class Reload
                 {
                     _isPendingAutoReload = false;
                     BloodpebblePlugin.Logger.LogInfo("Automatically reloading plugins...");
-                    ReloadPlugins();
+                    _pluginLoader.ReloadAll();
                 }
             }
         }
@@ -188,7 +164,7 @@ public static class Reload
         public static string ReloadAll()
         {
             BloodpebblePlugin.Logger.LogInfo("Reloading all plugins (triggered by RCON)...");
-            ReloadPlugins();
+            _pluginLoader.ReloadAll();
             return "Reloaded all Bloodpebble plugins";
         }
 
