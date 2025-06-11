@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Text;
 using BepInEx;
@@ -28,6 +29,8 @@ namespace Bloodpebble
         private ConfigEntry<float> _autoReloadDelaySeconds;
         private ConfigEntry<string> _loadingStrategy;
 
+        internal ReloadViaChatCommand? _reloadViaChatCommand;
+
         public BloodpebblePlugin() : base()
         {
             BloodpebblePlugin.Logger = Log;
@@ -48,6 +51,7 @@ namespace Bloodpebble
 
         public override bool Unload()
         {
+            _reloadViaChatCommand?.Dispose();
             RconCommandRegistrar.UnregisterAssembly();
 
             if (VWorld.IsServer)
@@ -93,6 +97,7 @@ namespace Bloodpebble
 
         private void InitReload()
         {
+            Directory.CreateDirectory(_pluginsFolder.Value);
             var loaderConfig = new PluginLoaderConfig(_pluginsFolder.Value);
             IPluginLoader pluginLoader;
             switch (_loadingStrategy.Value.ToLowerInvariant())
@@ -107,7 +112,9 @@ namespace Bloodpebble
                     break;
             }
             pluginLoader.ReloadedAllPlugins += HandleReloadedAllPlugins;
-            Reload.Initialize(pluginLoader, _reloadCommand.Value, _pluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value);
+            Reload.Initialize(pluginLoader, _pluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value);
+
+            _reloadViaChatCommand = new ReloadViaChatCommand(pluginLoader, _reloadCommand.Value);
         }
 
         private void HandleReloadedAllPlugins(object? sender, ReloadedAllPluginsEventArgs e)

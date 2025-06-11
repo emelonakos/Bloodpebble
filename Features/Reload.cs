@@ -14,7 +14,6 @@ namespace Bloodpebble.Features;
 public static class Reload
 {
 #nullable disable
-    private static string _reloadCommand;
     private static string _reloadPluginsFolder;
     private static float _autoReloadDelaySeconds;
     private static ReloadBehaviour _reloadBehavior;
@@ -26,22 +25,13 @@ public static class Reload
     private static float autoReloadTimer;
     private static IPluginLoader _pluginLoader;
 
-    internal static void Initialize(IPluginLoader pluginLoader, string reloadCommand, string reloadPluginsFolder, bool enableAutoReload, float autoReloadDelaySeconds)
+    internal static void Initialize(IPluginLoader pluginLoader, string reloadPluginsFolder, bool enableAutoReload, float autoReloadDelaySeconds)
     {
-        _reloadCommand = reloadCommand;
         _reloadPluginsFolder = reloadPluginsFolder;
         _autoReloadDelaySeconds = autoReloadDelaySeconds;
         _pluginLoader = pluginLoader;
 
-        // note: no need to remove this on unload, since we'll unload the hook itself anyway
-        Chat.OnChatMessage += HandleChatMessage;
-
         _reloadBehavior = BloodpebblePlugin.Instance.AddComponent<ReloadBehaviour>();
-
-        if (!Directory.Exists(_reloadPluginsFolder))
-        {
-            Directory.CreateDirectory(_reloadPluginsFolder);
-        }
 
         _pluginLoader.ReloadAll();
 
@@ -54,65 +44,10 @@ public static class Reload
     internal static void Uninitialize()
     {
         _fileSystemWatcher = null;
-        Hooks.Chat.OnChatMessage -= HandleChatMessage;
 
         if (_reloadBehavior != null)
         {
             UnityEngine.Object.Destroy(_reloadBehavior);
-        }
-    }
-
-    private static void HandleChatMessage(VChatEvent ev)
-    {
-        var msgParts = ev.Message.Split(' ');
-        var command = msgParts[0];
-
-        if (command != _reloadCommand && command != $"{_reloadCommand}one") return;
-        if (!ev.User.IsAdmin) return;
-
-        ev.Cancel();
-
-        if (command == _reloadCommand)
-        {
-            ChatCommandReloadAll(ev);
-        }
-        else if (command == $"{_reloadCommand}one")
-        {
-            ChatCommandReloadOne(ev, msgParts);
-        }
-    }
-
-    private static void ChatCommandReloadAll(VChatEvent ev)
-    {
-        var loadedPlugins = _pluginLoader.ReloadAll();
-
-        if (loadedPlugins.Count > 0)
-        {
-            var pluginNames = loadedPlugins.Select(plugin => plugin.Metadata.Name);
-            ev.User.SendSystemMessage($"Reloaded {string.Join(", ", pluginNames)}. See console for details.");
-        }
-        else
-        {
-            ev.User.SendSystemMessage($"Did not reload any plugins because no reloadable plugins were found.");
-        }
-    }
-
-    private static void ChatCommandReloadOne(VChatEvent ev, string[] msgParts)
-    {
-        if (msgParts.Length < 2)
-        {
-            ev.User.SendSystemMessage($"Usage: {_reloadCommand}one <PluginGUID>");
-            return;
-        }
-
-        var guid = msgParts[1];
-        if (_pluginLoader.TryReloadPlugin(guid, out var reloadedPlugin))
-        {
-            ev.User.SendSystemMessage($"Reloaded plugin: {reloadedPlugin.Metadata.Name} ({reloadedPlugin.Metadata.GUID})");
-        }
-        else
-        {
-            ev.User.SendSystemMessage($"Failed to reload plugin with GUID: {guid}. Check console for details.");
         }
     }
 
