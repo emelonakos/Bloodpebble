@@ -92,35 +92,4 @@ public static class Reload
         autoReloadTimer = _autoReloadDelaySeconds;
     }
 
-    [RconCommandCategory("Server Administration")]
-    public static class RconCommands
-    {
-        [RconCommand("reloadplugins", "Reloads all plugins in the BloodpebblePlugins folder")]
-        public static string ReloadAll()
-        {
-            BloodpebblePlugin.Logger.LogInfo("Reloading all plugins (triggered by RCON)...");
-            _pluginLoader.ReloadAll();
-            return "Reloaded all Bloodpebble plugins";
-        }
-
-        [RconCommand("reloadoneplugin", "Reloads a single plugin by its GUID", "reloadoneplugin <PluginGUID>")]
-        public static string ReloadOne(string guid)
-        {
-            if (string.IsNullOrWhiteSpace(guid))
-            {
-                return "Error: Plugin GUID not provided.";
-            }
-
-            BloodpebblePlugin.Logger.LogInfo($"Reloading plugin {guid} (triggered by RCON)...");
-            if (_pluginLoader.TryReloadPlugin(guid, out var reloadedPlugin))
-            {
-                return $"Reloaded plugin: {reloadedPlugin.Metadata.Name}";
-            }
-            else
-            {
-                return $"Failed to reload plugin with GUID: {guid}. See server console for details.";
-            }
-        }
-    }
-
 }

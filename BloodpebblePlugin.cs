@@ -11,7 +11,6 @@ using Bloodpebble.Reloading;
 using Bloodpebble.Reloading.LoaderBasic;
 using Bloodpebble.Reloading.LoaderIslands;
 using Bloodpebble.Utils;
-using ScarletRCON.Shared;
 
 namespace Bloodpebble
 {
@@ -45,14 +44,13 @@ namespace Bloodpebble
                 Hooks.Chat.Initialize();
             }
             InitReload();
-            RconCommandRegistrar.RegisterAll();
             Logger.LogInfo($"Bloodpebble v{MyPluginInfo.PLUGIN_VERSION} loaded.");
         }
 
         public override bool Unload()
         {
+            ReloadViaRCON.Uninitialize();
             _reloadViaChatCommand?.Dispose();
-            RconCommandRegistrar.UnregisterAssembly();
 
             if (VWorld.IsServer)
             {
@@ -115,6 +113,7 @@ namespace Bloodpebble
             Reload.Initialize(pluginLoader, _pluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value);
 
             _reloadViaChatCommand = new ReloadViaChatCommand(pluginLoader, _reloadCommand.Value);
+            ReloadViaRCON.Initialize(pluginLoader);
         }
 
         private void HandleReloadedAllPlugins(object? sender, ReloadedAllPluginsEventArgs e)

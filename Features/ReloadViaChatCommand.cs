@@ -5,7 +5,7 @@ using Bloodpebble.Extensions;
 
 namespace Bloodpebble.Features;
 
-
+// todo: defer reloading to happen outside of the system updates.
 internal class ReloadViaChatCommand
 {
     private IPluginLoader _pluginLoader;
