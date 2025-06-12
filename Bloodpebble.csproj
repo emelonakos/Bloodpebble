@@ -32,7 +32,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="VRising.Unhollowed.Client" Version="1.1.*" />
     <PackageReference Include="BepInEx.Unity.IL2CPP" Version="$(BepInExVersion)" IncludeAssets="compile" />
     <PackageReference Include="BepInEx.Core" Version="$(BepInExVersion)" IncludeAssets="compile" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.1.0" />
@@ -64,5 +63,13 @@
     <ZipDirectory SourceDirectory="dist/thunderstore/temp" DestinationFile="dist/thunderstore/$(AssemblyName).zip" Overwrite="true"></ZipDirectory>
     <RemoveDir Directories="dist/thunderstore/temp"/>
   </Target>
+
+  <PropertyGroup>
+    <VendorPathBepInEx>vendor/VRisingGameFiles/BepInEx</VendorPathBepInEx>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(VendorPathBepInEx)/core/*.dll" />
+    <Reference Include="$(VendorPathBepInEx)/interop/*.dll" />
+  </ItemGroup>
 
 </Project>
