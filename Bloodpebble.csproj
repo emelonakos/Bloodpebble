@@ -55,13 +55,22 @@
   </PropertyGroup>
 
   <Target Name="ThunderstoreDist" AfterTargets="Publish">
-    <WriteLinesToFile Lines="$(ThunderstoreManifestContent)" File="dist/thunderstore/temp/manifest.json" WriteOnlyWhenDifferent="true" Overwrite="true" />
-    <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="dist/thunderstore/temp" />
-    <Copy SourceFiles="icon.png" DestinationFolder="dist/thunderstore/temp"/>
-    <Copy SourceFiles="README.md" DestinationFolder="dist/thunderstore/temp"/>
-    <Copy SourceFiles="CHANGELOG.md" DestinationFolder="dist/thunderstore/temp"/>
-    <ZipDirectory SourceDirectory="dist/thunderstore/temp" DestinationFile="dist/thunderstore/$(AssemblyName).zip" Overwrite="true"></ZipDirectory>
-    <RemoveDir Directories="dist/thunderstore/temp"/>
+    <PropertyGroup>
+      <ThunderstoreName>Bloodpebble</ThunderstoreName>
+      <ThunderstoreZipFileName>thunderstore.$(ThunderstoreName).$(Version).zip</ThunderstoreZipFileName>
+      <ThunderstoreZipFile>dist/$(ThunderstoreZipFileName)</ThunderstoreZipFile>
+    </PropertyGroup>
+    <WriteLinesToFile Lines="$(ThunderstoreManifestContent)" File="dist/temp/thunderstore/manifest.json" WriteOnlyWhenDifferent="true" Overwrite="true" />
+    <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="dist/temp/thunderstore" />
+    <Copy SourceFiles="icon.png" DestinationFolder="dist/temp/thunderstore"/>
+    <Copy SourceFiles="README.md" DestinationFolder="dist/temp/thunderstore"/>
+    <Copy SourceFiles="CHANGELOG.md" DestinationFolder="dist/temp/thunderstore"/>
+    <ZipDirectory SourceDirectory="dist/temp/thunderstore" DestinationFile="$(ThunderstoreZipFile)" Overwrite="true"></ZipDirectory>
+    <RemoveDir Directories="dist/temp/"/>
+  </Target>
+
+  <Target Name="SingleDllDist" AfterTargets="Publish">
+    <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="dist/" />
   </Target>
 
   <PropertyGroup>
