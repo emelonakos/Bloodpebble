@@ -10,6 +10,8 @@ using Bloodpebble.Features;
 using Bloodpebble.Reloading;
 using Bloodpebble.Reloading.LoaderBasic;
 using Bloodpebble.Reloading.LoaderIslands;
+using Bloodpebble.ReloadRequestHandling;
+using Bloodpebble.ReloadRequesting;
 using Bloodpebble.Utils;
 
 namespace Bloodpebble
@@ -28,7 +30,8 @@ namespace Bloodpebble
         private ConfigEntry<float> _autoReloadDelaySeconds;
         private ConfigEntry<string> _loadingStrategy;
 
-        internal ReloadViaChatCommand? _reloadViaChatCommand;
+        private IReloadRequestHandler? _reloadRequestHandler;
+        private ReloadViaChatCommand? _reloadViaChatCommand;
 
         public BloodpebblePlugin() : base()
         {
@@ -49,6 +52,7 @@ namespace Bloodpebble
 
         public override bool Unload()
         {
+            _reloadRequestHandler?.Dispose();
             ReloadViaRCON.Uninitialize();
             _reloadViaChatCommand?.Dispose();
 
@@ -112,7 +116,11 @@ namespace Bloodpebble
             pluginLoader.ReloadedAllPlugins += HandleReloadedAllPlugins;
             Reload.Initialize(pluginLoader, _pluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value);
 
-            _reloadViaChatCommand = new ReloadViaChatCommand(pluginLoader, _reloadCommand.Value);
+            _reloadRequestHandler = new ImmediateReloadRequestHandler(pluginLoader);
+
+            _reloadViaChatCommand = new ReloadViaChatCommand(_reloadCommand.Value);
+            _reloadRequestHandler.Subscribe(_reloadViaChatCommand);
+
             ReloadViaRCON.Initialize(pluginLoader);
         }
 

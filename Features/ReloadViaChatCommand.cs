@@ -1,19 +1,17 @@
 using System.Linq;
 using Bloodpebble.Hooks;
-using Bloodpebble.Reloading;
 using Bloodpebble.Extensions;
+using Bloodpebble.ReloadRequesting;
 
 namespace Bloodpebble.Features;
 
 // todo: defer reloading to happen outside of the system updates.
-internal class ReloadViaChatCommand
+internal class ReloadViaChatCommand : BaseReloadRequestor
 {
-    private IPluginLoader _pluginLoader;
     private string _reloadCommand;
 
-    internal ReloadViaChatCommand(IPluginLoader pluginLoader, string reloadCommand)
+    internal ReloadViaChatCommand(string reloadCommand)
     {
-        _pluginLoader = pluginLoader;
         _reloadCommand = reloadCommand;
         Chat.OnChatMessage += HandleChatMessage;
     }
@@ -35,30 +33,29 @@ internal class ReloadViaChatCommand
 
         if (command == _reloadCommand)
         {
-            ChatCommandReloadAll(ev);
+            ChatCommandReloadAllAsync(ev);
         }
         else if (command == $"{_reloadCommand}one")
         {
-            ChatCommandReloadOne(ev, msgParts);
+            ChatCommandReloadOneAsync(ev, msgParts);
         }
     }
 
-    private void ChatCommandReloadAll(VChatEvent ev)
+    private async void ChatCommandReloadAllAsync(VChatEvent ev)
     {
-        var loadedPlugins = _pluginLoader.ReloadAll();
-
-        if (loadedPlugins.Count > 0)
+        var loadedPlugins = (await RequestFullReloadAsync()).PluginsReloaded;
+        if (!loadedPlugins.Any())
+        {
+            ev.User.SendSystemMessage($"Did not reload any plugins because no reloadable plugins were found.");
+        }
+        else
         {
             var pluginNames = loadedPlugins.Select(plugin => plugin.Metadata.Name);
             ev.User.SendSystemMessage($"Reloaded {string.Join(", ", pluginNames)}. See console for details.");
         }
-        else
-        {
-            ev.User.SendSystemMessage($"Did not reload any plugins because no reloadable plugins were found.");
-        }
     }
 
-    private void ChatCommandReloadOne(VChatEvent ev, string[] msgParts)
+    private async void ChatCommandReloadOneAsync(VChatEvent ev, string[] msgParts)
     {
         if (msgParts.Length < 2)
         {
@@ -66,14 +63,16 @@ internal class ReloadViaChatCommand
             return;
         }
 
-        var guid = msgParts[1];
-        if (_pluginLoader.TryReloadPlugin(guid, out var reloadedPlugin))
+        var pluginGuid = msgParts[1];
+        var reloadResult = await RequestPartialReloadAsync([pluginGuid]);
+        var reloadedPlugin = reloadResult.PluginsReloaded.FirstOrDefault(p => p is not null && p.Metadata.GUID.Equals(pluginGuid), null);
+        if (reloadedPlugin is null)
         {
-            ev.User.SendSystemMessage($"Reloaded plugin: {reloadedPlugin.Metadata.Name} ({reloadedPlugin.Metadata.GUID})");
+            ev.User.SendSystemMessage($"Failed to reload plugin with GUID: {pluginGuid}. Check console for details.");
         }
         else
         {
-            ev.User.SendSystemMessage($"Failed to reload plugin with GUID: {guid}. Check console for details.");
+            ev.User.SendSystemMessage($"Reloaded plugin: {reloadedPlugin.Metadata.Name} ({reloadedPlugin.Metadata.GUID})");
         }
     }
 
