@@ -79,7 +79,9 @@ namespace Bloodpebble
             }
             pluginLoader.ReloadedAllPlugins += HandleReloadedAllPlugins;
 
-            _reloadRequestHandler = new ImmediateReloadRequestHandler(pluginLoader);
+            // todo: config option to choose... maybe
+            //_reloadRequestHandler = new ImmediateReloadRequestHandler(pluginLoader, Log);
+            _reloadRequestHandler = new LateUpdateReloadRequestHandler(pluginLoader, Log);
 
             _reloadViaChatCommand = new ReloadViaChatCommand(cfg.ReloadCommand.Value);
             _reloadRequestHandler.Subscribe(_reloadViaChatCommand);

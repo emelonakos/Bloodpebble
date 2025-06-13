@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Bloodpebble.Features;
 
-// todo: defer reloading to happen outside of the system updates.
+
 internal class ReloadViaRCON : BaseReloadRequestor
 {
     internal static ReloadViaRCON? Instance;

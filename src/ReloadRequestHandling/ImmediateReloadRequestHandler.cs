@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using BepInEx.Logging;
 using Bloodpebble.Reloading;
 using Bloodpebble.ReloadRequesting;
 
@@ -13,10 +15,12 @@ namespace Bloodpebble.ReloadRequestHandling;
 class ImmediateReloadRequestHandler : BaseReloadRequestHandler
 {
     private IPluginLoader _pluginLoader;
+    private ManualLogSource _log;
 
-    public ImmediateReloadRequestHandler(IPluginLoader pluginLoader)
+    public ImmediateReloadRequestHandler(IPluginLoader pluginLoader,  ManualLogSource log)
     {
         _pluginLoader = pluginLoader;
+        _log = log;
     }
 
     public override void HandleFullReloadRequested(FullReloadRequest request)
@@ -27,8 +31,9 @@ class ImmediateReloadRequestHandler : BaseReloadRequestHandler
         {
             pluginsReloaded = _pluginLoader.ReloadAll();
         }
-        catch
+        catch (Exception ex)
         {
+            _log.LogError(ex);
             pluginsReloaded = new List<PluginInfo>();
             faulted = true;
         }
@@ -47,8 +52,9 @@ class ImmediateReloadRequestHandler : BaseReloadRequestHandler
         {
             pluginsReloaded = _pluginLoader.ReloadGiven(request.PluginGuidsToReload);
         }
-        catch
+        catch (Exception ex)
         {
+            _log.LogError(ex);
             pluginsReloaded = new List<PluginInfo>();
             faulted = true;
         }
@@ -61,19 +67,6 @@ class ImmediateReloadRequestHandler : BaseReloadRequestHandler
             Status: PartialReloadResultStatus(faulted, requestedGuids, reloadedGuids),
             WasSuperseded: false
         ));
-    }
-
-    internal static ReloadResultStatus PartialReloadResultStatus(bool faulted, ISet<string> requestedGuids, ISet<string> reloadedGuids)
-    {
-        if (faulted)
-        {
-            return ReloadResultStatus.Faulted;
-        }
-        else if (!requestedGuids.IsSubsetOf(reloadedGuids))
-        {
-            return ReloadResultStatus.PartialSuccess;
-        }
-        return ReloadResultStatus.Success;
     }
 
     public override void Update()

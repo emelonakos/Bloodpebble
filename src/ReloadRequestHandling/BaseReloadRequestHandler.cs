@@ -44,5 +44,18 @@ internal abstract class BaseReloadRequestHandler : IReloadRequestHandler
     public abstract void HandleFullReloadRequested(FullReloadRequest request);
     public abstract void HandlePartialReloadRequested(PartialReloadRequest request);
     public abstract void Update();
+
+    protected static ReloadResultStatus PartialReloadResultStatus(bool faulted, ISet<string> requestedGuids, ISet<string> reloadedGuids)
+    {
+        if (faulted)
+        {
+            return ReloadResultStatus.Faulted;
+        }
+        else if (!requestedGuids.IsSubsetOf(reloadedGuids))
+        {
+            return ReloadResultStatus.PartialSuccess;
+        }
+        return ReloadResultStatus.Success;
+    }
     
 }

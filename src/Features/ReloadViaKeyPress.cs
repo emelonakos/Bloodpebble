@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Bloodpebble.Features;
 
-// todo: defer reloading to happen outside of the system updates.
+
 internal class ReloadViaKeyPress : BaseReloadRequestor
 {
     private KeyCode _reloadKeyCode;

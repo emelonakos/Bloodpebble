@@ -5,7 +5,7 @@ using Bloodpebble.ReloadRequesting;
 
 namespace Bloodpebble.Features;
 
-// todo: defer reloading to happen outside of the system updates.
+
 internal class ReloadViaChatCommand : BaseReloadRequestor
 {
     private string _reloadCommand;

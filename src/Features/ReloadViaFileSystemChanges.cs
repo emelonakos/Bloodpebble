@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Bloodpebble.Features;
 
-// todo: defer reloading to happen outside of the system updates.
+
 internal class ReloadViaFileSystemChanges : BaseReloadRequestor
 {
     private float _autoReloadDelaySeconds;
