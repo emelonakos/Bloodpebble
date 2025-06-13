@@ -1,9 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
-using System.Text;
 using BepInEx;
-using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using Bloodpebble.Features;
@@ -24,11 +21,7 @@ namespace Bloodpebble
         public static ManualLogSource Logger { get; private set; }
         internal static BloodpebblePlugin Instance { get; private set; }
 #nullable enable
-        private ConfigEntry<string> _reloadCommand;
-        private ConfigEntry<string> _pluginsFolder;
-        private ConfigEntry<bool> _enableAutoReload;
-        private ConfigEntry<float> _autoReloadDelaySeconds;
-        private ConfigEntry<string> _loadingStrategy;
+        private readonly BloodpebbleConfig cfg;
 
         private IReloadRequestHandler? _reloadRequestHandler;
         private ReloadViaChatCommand? _reloadViaChatCommand;
@@ -39,7 +32,7 @@ namespace Bloodpebble
         {
             BloodpebblePlugin.Logger = Log;
             Instance = this;
-            InitConfig();
+            cfg = new BloodpebbleConfig(Config);
         }
 
         public override void Load()
@@ -68,46 +61,12 @@ namespace Bloodpebble
             return true;
         }
 
-        [MemberNotNull(nameof(_reloadCommand))]
-        [MemberNotNull(nameof(_pluginsFolder))]
-        [MemberNotNull(nameof(_enableAutoReload))]
-        [MemberNotNull(nameof(_autoReloadDelaySeconds))]
-        [MemberNotNull(nameof(_loadingStrategy))]
-        private void InitConfig()
-        {
-            _reloadCommand = Config.Bind("General", "ReloadCommand", "!reload", "Server chat command to reload plugins. User must first be AdminAuth'd (accomplished via console command).");
-            _pluginsFolder = Config.Bind("General", "ReloadablePluginsFolder", "BepInEx/BloodpebblePlugins", "The folder to (re)load plugins from, relative to the game directory.");
-            _enableAutoReload = Config.Bind("AutoReload", "EnableAutoReload", true, new ConfigDescription("Automatically reloads all plugins if any of the files get changed (added/removed/modified)."));
-            _autoReloadDelaySeconds = Config.Bind("AutoReload", "AutoReloadDelaySeconds", 2.0f, new ConfigDescription("Delay in seconds before auto reloading."));
-
-            string loaderDescription = new StringBuilder()
-                .AppendLine("Which strategy to use for (re)loading plugins. Possible values:")
-                .AppendLine()
-                .AppendLine("Basic   - Robust, but slow if you have a lot of plugins and only want to reload one.")
-                .AppendLine("          All plugins share a loading context. Reloading one plugin reloads them all.")
-                .AppendLine("          Handles plugin errors with troubleshooting messages;")
-                .AppendLine("          attempts to recover and load every valid plugin.")
-                .AppendLine()
-                .AppendLine("Islands - Potentially faster when you have a lot of plugins and only want to reload one.")
-                .AppendLine("          Plugins are partitioned into loading islands based on their dependencies.")
-                .AppendLine("          Minimal handling of plugin errors. Either loads everything or nothing.")
-                .AppendLine()
-                .ToString();
-
-            _loadingStrategy = Config.Bind(
-                section: "Loader",
-                key: "LoadingStrategy",
-                defaultValue: "Basic",
-                configDescription: new ConfigDescription(loaderDescription, new AcceptableValueList<string>("Basic", "Islands"))
-            );
-        }
-
         private void InitReload()
         {
-            Directory.CreateDirectory(_pluginsFolder.Value);
-            var loaderConfig = new PluginLoaderConfig(_pluginsFolder.Value);
+            Directory.CreateDirectory(cfg.PluginsFolder.Value);
+            var loaderConfig = new PluginLoaderConfig(cfg.PluginsFolder.Value);
             IPluginLoader pluginLoader;
-            switch (_loadingStrategy.Value.ToLowerInvariant())
+            switch (cfg.LoadingStrategy.Value.ToLowerInvariant())
             {
                 case "islands":
                     pluginLoader = new IslandsPluginLoader(loaderConfig);
@@ -122,12 +81,12 @@ namespace Bloodpebble
 
             _reloadRequestHandler = new ImmediateReloadRequestHandler(pluginLoader);
 
-            _reloadViaChatCommand = new ReloadViaChatCommand(_reloadCommand.Value);
+            _reloadViaChatCommand = new ReloadViaChatCommand(cfg.ReloadCommand.Value);
             _reloadRequestHandler.Subscribe(_reloadViaChatCommand);
 
-            if (_enableAutoReload.Value)
+            if (cfg.EnableAutoReload.Value)
             {
-                _reloadViaFileSystemChanges = new ReloadViaFileSystemChanges(_pluginsFolder.Value, _autoReloadDelaySeconds.Value);
+                _reloadViaFileSystemChanges = new ReloadViaFileSystemChanges(cfg.PluginsFolder.Value, cfg.AutoReloadDelaySeconds.Value);
                 _reloadRequestHandler.Subscribe(_reloadViaFileSystemChanges);
             }
 
