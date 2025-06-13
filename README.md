@@ -40,7 +40,8 @@ User must first be AdminAuth'd (accomplished via console command).
 ### RCON
 
 If [ScarletRCON](https://thunderstore.io/c/v-rising/p/ScarletMods/ScarletRCON/) is installed, bloodpebble will provide an RCON command to reload.
-- `bloodpebble.reloadplugins`
+- `bloodpebble.reloadplugins` : Reload all valid plugins.
+- `bloodpebble.reloadplugin <PluginGUID>` : Reload one plugin. Other plugins (e.g. dependents) can also be reloaded.
 
 ### Disclaimer
 

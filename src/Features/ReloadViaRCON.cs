@@ -60,7 +60,7 @@ internal class ReloadViaRCON : BaseReloadRequestor
         }
 
         // todo: async RCON commands
-        [RconCommand("reloadplugin", "Reloads a single plugin by its GUID", "reloadoneplugin <PluginGUID>")]
+        [RconCommand("reloadplugin", "Reloads a single plugin by its GUID", "reloadplugin <PluginGUID>")]
         public static string ReloadOne(string guid)
         {
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -69,7 +69,7 @@ internal class ReloadViaRCON : BaseReloadRequestor
             return $"will attempt to reload plugin {guid}  (async RCON commands not yet supported)";
         }
 
-        //[RconCommand("reloadplugin", "Reloads a single plugin by its GUID", "reloadoneplugin <PluginGUID>")]
+        //[RconCommand("reloadplugin", "Reloads a single plugin by its GUID", "reloadplugin <PluginGUID>")]
         public async static Task<string> ReloadOneAsync(string guid)
         {
             if (Instance is null)
