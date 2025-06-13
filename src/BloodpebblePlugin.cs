@@ -121,7 +121,8 @@ namespace Bloodpebble
             _reloadViaChatCommand = new ReloadViaChatCommand(_reloadCommand.Value);
             _reloadRequestHandler.Subscribe(_reloadViaChatCommand);
 
-            ReloadViaRCON.Initialize(pluginLoader);
+            var reloadViaRCON = ReloadViaRCON.Initialize();
+            _reloadRequestHandler.Subscribe(reloadViaRCON);
         }
 
         private void HandleReloadedAllPlugins(object? sender, ReloadedAllPluginsEventArgs e)
