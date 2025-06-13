@@ -32,6 +32,7 @@ namespace Bloodpebble
 
         private IReloadRequestHandler? _reloadRequestHandler;
         private ReloadViaChatCommand? _reloadViaChatCommand;
+        private ReloadViaFileSystemChanges? _reloadViaFileSystemChanges;
 
         public BloodpebblePlugin() : base()
         {
@@ -54,6 +55,7 @@ namespace Bloodpebble
         {
             _reloadRequestHandler?.Dispose();
             ReloadViaRCON.Uninitialize();
+            _reloadViaFileSystemChanges?.Dispose();
             _reloadViaChatCommand?.Dispose();
 
             if (VWorld.IsServer)
@@ -114,12 +116,15 @@ namespace Bloodpebble
                     break;
             }
             pluginLoader.ReloadedAllPlugins += HandleReloadedAllPlugins;
-            Reload.Initialize(pluginLoader, _pluginsFolder.Value, _enableAutoReload.Value, _autoReloadDelaySeconds.Value);
+            Reload.Initialize(pluginLoader);
 
             _reloadRequestHandler = new ImmediateReloadRequestHandler(pluginLoader);
 
             _reloadViaChatCommand = new ReloadViaChatCommand(_reloadCommand.Value);
             _reloadRequestHandler.Subscribe(_reloadViaChatCommand);
+
+            _reloadViaFileSystemChanges = new ReloadViaFileSystemChanges(_pluginsFolder.Value, _autoReloadDelaySeconds.Value);
+            _reloadRequestHandler.Subscribe(_reloadViaFileSystemChanges);
 
             var reloadViaRCON = ReloadViaRCON.Initialize();
             _reloadRequestHandler.Subscribe(reloadViaRCON);
