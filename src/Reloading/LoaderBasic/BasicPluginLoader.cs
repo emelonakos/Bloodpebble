@@ -44,8 +44,9 @@ class BasicPluginLoader : BasePluginLoader, IPluginLoader
 
     public bool TryReloadPlugin(string guid, [NotNullWhen(true)] out PluginInfo? freshPlugin)
     {
-        // todo: implement
-        throw new NotImplementedException();
+        var loadedPlugins = ReloadAll();
+        freshPlugin = loadedPlugins.FirstOrDefault(p => p?.Metadata.GUID == guid, null);
+        return freshPlugin is not null;
     }
 
     public void UnloadAll()
