@@ -1,6 +1,6 @@
 
+using Bloodpebble.Hooks;
 using Bloodpebble.ReloadRequesting;
-using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using UnityEngine;
@@ -11,7 +11,6 @@ namespace Bloodpebble.Features;
 internal class ReloadViaFileSystemChanges : BaseReloadRequestor
 {
     private float _autoReloadDelaySeconds;
-    private TickBehaviour _tickBehaviour;
     private FileSystemWatcher _fileSystemWatcher;
 
     private bool _isPendingAutoReload = false;
@@ -20,20 +19,13 @@ internal class ReloadViaFileSystemChanges : BaseReloadRequestor
     internal ReloadViaFileSystemChanges(string reloadPluginsFolder, float autoReloadDelaySeconds)
     {
         _autoReloadDelaySeconds = autoReloadDelaySeconds;
-
-        _tickBehaviour = BloodpebblePlugin.Instance.AddComponent<TickBehaviour>();
-        _tickBehaviour.Updating += UpdateDebounce;
-
         StartFileSystemWatcher(reloadPluginsFolder);
+        GameFrame.OnLateUpdate += UpdateDebounce;
     }
 
     internal void Dispose()
     {
-        if (_tickBehaviour != null)
-        {
-            _tickBehaviour.Updating -= UpdateDebounce;
-            UnityEngine.Object.Destroy(_tickBehaviour);
-        }
+        GameFrame.OnLateUpdate -= UpdateDebounce;
     }
 
     [MemberNotNull(nameof(_fileSystemWatcher))]
@@ -68,16 +60,6 @@ internal class ReloadViaFileSystemChanges : BaseReloadRequestor
             _isPendingAutoReload = false;
             BloodpebblePlugin.Logger.LogInfo("Automatically reloading plugins..."); // todo: this logging should be moved to the handler, not the requester
             RequestFullReloadAsync();
-        }
-    }
-    
-    private class TickBehaviour : UnityEngine.MonoBehaviour
-    {
-        public event Action? Updating;
-
-        public void Update()
-        {
-            Updating?.Invoke();
         }
     }
 

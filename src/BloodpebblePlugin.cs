@@ -33,6 +33,7 @@ namespace Bloodpebble
         private IReloadRequestHandler? _reloadRequestHandler;
         private ReloadViaChatCommand? _reloadViaChatCommand;
         private ReloadViaFileSystemChanges? _reloadViaFileSystemChanges;
+        private ReloadViaKeyPress? _reloadViaKeyPress;
 
         public BloodpebblePlugin() : base()
         {
@@ -47,6 +48,7 @@ namespace Bloodpebble
             {
                 Hooks.Chat.Initialize();
             }
+            Hooks.GameFrame.Initialize();
             InitReload();
             Logger.LogInfo($"Bloodpebble v{MyPluginInfo.PLUGIN_VERSION} loaded.");
         }
@@ -57,7 +59,8 @@ namespace Bloodpebble
             ReloadViaRCON.Uninitialize();
             _reloadViaFileSystemChanges?.Dispose();
             _reloadViaChatCommand?.Dispose();
-
+            _reloadViaKeyPress?.Dispose();
+            Hooks.GameFrame.Initialize();
             if (VWorld.IsServer)
             {
                 Hooks.Chat.Uninitialize();
@@ -116,18 +119,28 @@ namespace Bloodpebble
                     break;
             }
             pluginLoader.ReloadedAllPlugins += HandleReloadedAllPlugins;
-            Reload.Initialize(pluginLoader);
 
             _reloadRequestHandler = new ImmediateReloadRequestHandler(pluginLoader);
 
             _reloadViaChatCommand = new ReloadViaChatCommand(_reloadCommand.Value);
             _reloadRequestHandler.Subscribe(_reloadViaChatCommand);
 
-            _reloadViaFileSystemChanges = new ReloadViaFileSystemChanges(_pluginsFolder.Value, _autoReloadDelaySeconds.Value);
-            _reloadRequestHandler.Subscribe(_reloadViaFileSystemChanges);
+            if (_enableAutoReload.Value)
+            {
+                _reloadViaFileSystemChanges = new ReloadViaFileSystemChanges(_pluginsFolder.Value, _autoReloadDelaySeconds.Value);
+                _reloadRequestHandler.Subscribe(_reloadViaFileSystemChanges);
+            }
+
+            if (VWorld.IsClient)
+            {
+                _reloadViaKeyPress = new ReloadViaKeyPress();
+                _reloadRequestHandler.Subscribe(_reloadViaKeyPress);
+            }
 
             var reloadViaRCON = ReloadViaRCON.Initialize();
             _reloadRequestHandler.Subscribe(reloadViaRCON);
+            
+            pluginLoader.ReloadAll();
         }
 
         private void HandleReloadedAllPlugins(object? sender, ReloadedAllPluginsEventArgs e)
