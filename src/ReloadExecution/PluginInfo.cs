@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using BepInEx;
 
-namespace Bloodpebble.Reloading;
+namespace Bloodpebble.ReloadExecution;
 
 #nullable disable
 

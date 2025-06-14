@@ -1,3 +1,3 @@
-namespace Bloodpebble.Reloading;
+namespace Bloodpebble.ReloadExecution;
 
 internal record PluginLoaderConfig(string PluginsPath);

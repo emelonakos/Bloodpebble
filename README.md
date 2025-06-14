@@ -6,8 +6,7 @@ Bloodpebble is a modding tool for the game [V Rising](https://playvrising.com/) 
 
 See the [thunderstore readme](README-thunderstore.md) for information about features, how to use it, etc.
 
-## Objectives
-
+## Principles
 
 - Bloodpebble has one job only: hot reloading plugins. It should do it well. And do nothing else.
 - Plugin dependencies should be correctly resolved. Dependencies can also be hot reloaded, or already exist via the usual bepinex loading process.
@@ -18,6 +17,7 @@ See the [thunderstore readme](README-thunderstore.md) for information about feat
 - When it comes to tradeoffs, let the user decide via configuration.
 
 ## History
+
 Bloodpebble started as a fork of [Bloodstone](https://github.com/decaprime/Bloodstone), with the goal of adding dependency resolution, and simply getting merged back into the mainline.
 
 But major game updates repeatedly exposed problems revolving around Bloodstone. Aiming to avoid those problems,  Bloodpebble ended up evolving into a different project with different objectives.

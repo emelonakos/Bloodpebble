@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Bloodpebble.Reloading;
+namespace Bloodpebble.ReloadExecution;
 
 
 internal abstract class BasePluginLoader : ITriggersPluginLoaderEvents

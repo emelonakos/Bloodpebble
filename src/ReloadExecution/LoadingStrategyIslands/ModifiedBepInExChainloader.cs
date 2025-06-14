@@ -11,7 +11,7 @@ using Mono.Cecil;
 using BepInEx.Bootstrap;
 using System.Runtime.Loader;
 
-namespace Bloodpebble.Reloading.LoaderIslands
+namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
 {
     // Extension of the BepInEx chainloader.
     //

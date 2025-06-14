@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace Bloodpebble.Reloading.LoaderIslands
+namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
 {
     /// <summary>
     ///     Groups plugins into islands. Each island has its own AssemblyLoadContext.
@@ -58,8 +58,8 @@ namespace Bloodpebble.Reloading.LoaderIslands
             _bepinexChainloader = new ModifiedBepInExChainloader();
 
             var allPluginInfos = _bepinexChainloader.DiscoverAndSortPlugins(pluginsPath);
-            var graph = BuildDependencyGraph(allPluginInfos);
-            var pluginGroups = FindPluginGroups(allPluginInfos, graph);
+            var neighborhoods = BuildNeighborhoods(allPluginInfos);
+            var pluginGroups = FindPluginGroups(allPluginInfos, neighborhoods);
 
             var newlyLoaded = new List<PluginInfo>();
             foreach (var group in pluginGroups)
@@ -208,31 +208,31 @@ namespace Bloodpebble.Reloading.LoaderIslands
             }
         }
 
-        private Dictionary<string, List<string>> BuildDependencyGraph(IEnumerable<BepInEx.PluginInfo> plugins)
+        private Dictionary<string, List<string>> BuildNeighborhoods(IEnumerable<BepInEx.PluginInfo> plugins)
         {
-            var graph = new Dictionary<string, List<string>>();
+            var neighborhoods = new Dictionary<string, List<string>>();
             var pluginGuids = new HashSet<string>(plugins.Select(p => p.Metadata.GUID));
 
             foreach (var plugin in plugins)
             {
-                if (!graph.ContainsKey(plugin.Metadata.GUID))
-                    graph[plugin.Metadata.GUID] = new List<string>();
+                if (!neighborhoods.ContainsKey(plugin.Metadata.GUID))
+                    neighborhoods[plugin.Metadata.GUID] = new List<string>();
 
                 foreach (var dep in plugin.Dependencies)
                 {
                     if (pluginGuids.Contains(dep.DependencyGUID))
                     {
-                        graph[plugin.Metadata.GUID].Add(dep.DependencyGUID);
-                        if (!graph.ContainsKey(dep.DependencyGUID))
-                            graph[dep.DependencyGUID] = new List<string>();
-                        graph[dep.DependencyGUID].Add(plugin.Metadata.GUID);
+                        neighborhoods[plugin.Metadata.GUID].Add(dep.DependencyGUID);
+                        if (!neighborhoods.ContainsKey(dep.DependencyGUID))
+                            neighborhoods[dep.DependencyGUID] = new List<string>();
+                        neighborhoods[dep.DependencyGUID].Add(plugin.Metadata.GUID);
                     }
                 }
             }
-            return graph;
+            return neighborhoods;
         }
 
-        private List<List<BepInEx.PluginInfo>> FindPluginGroups(IEnumerable<BepInEx.PluginInfo> plugins, Dictionary<string, List<string>> graph)
+        private List<List<BepInEx.PluginInfo>> FindPluginGroups(IEnumerable<BepInEx.PluginInfo> plugins, Dictionary<string, List<string>> neighborhoods)
         {
             var groups = new List<List<BepInEx.PluginInfo>>();
             var visited = new HashSet<string>();
@@ -252,7 +252,7 @@ namespace Bloodpebble.Reloading.LoaderIslands
                     var currentGuid = stack.Pop();
                     currentGroupGuids.Add(currentGuid);
 
-                    if (graph.TryGetValue(currentGuid, out var neighbors))
+                    if (neighborhoods.TryGetValue(currentGuid, out var neighbors))
                     {
                         foreach (var neighbor in neighbors)
                         {

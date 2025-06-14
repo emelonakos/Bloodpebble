@@ -15,7 +15,7 @@ using BepInEx.Bootstrap;
 using Unity.Collections;
 using System.Runtime.Loader;
 
-namespace Bloodpebble.Reloading.LoaderBasic;
+namespace Bloodpebble.ReloadExecution.LoadingStategyBasic;
 
 // Extension of the BepInEx chainloader.
 //

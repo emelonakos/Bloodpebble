@@ -5,7 +5,7 @@ using System.Linq;
 using BepInEx.Unity.IL2CPP;
 using ProjectM;
 
-namespace Bloodpebble.Reloading.LoaderBasic;
+namespace Bloodpebble.ReloadExecution.LoadingStategyBasic;
 
 /// <summary>
 ///     Loads all plugins into a single AssemblyLoadContext.
