@@ -1,3 +1,7 @@
+# 1.3.1
+- The initial load of plugins in the BloodpebblePlugins folder now happens AFTER normal BepInEx plugins loaded.
+  - This should resolve some issues with dependencies not being found. Interestingly, bloodstone would have had the same problem.
+
 # 1.3.0
 - Plugin reloading now always happens during the LateUpdate phase of the [Unity event loop](https://docs.unity3d.com/Manual/execution-order.html).
   - previously varied depending on how the reload was triggered, which could cause issues when happening in the middle of Systems updates.

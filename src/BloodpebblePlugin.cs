@@ -30,6 +30,7 @@ namespace Bloodpebble
         private ReloadViaChatCommand? _reloadViaChatCommand;
         private ReloadViaFileSystemChanges? _reloadViaFileSystemChanges;
         private ReloadViaKeyPress? _reloadViaKeyPress;
+        private IPluginLoader? _pluginLoader;
 
         public BloodpebblePlugin() : base()
         {
@@ -46,7 +47,8 @@ namespace Bloodpebble
                 Hooks.Chat.Initialize();
             }
             Hooks.GameFrame.Initialize();
-            InitReload();
+            InitReloadFeatures();
+            DoInitialPluginsLoad_After_BepInExLoadedOtherPlugins();
             Logger.LogInfo($"Bloodpebble v{MyPluginInfo.PLUGIN_VERSION} loaded.");
         }
 
@@ -66,7 +68,7 @@ namespace Bloodpebble
             return true;
         }
 
-        private void InitReload()
+        private void InitReloadFeatures()
         {
             Directory.CreateDirectory(cfg.PluginsFolder.Value);
             var loaderConfig = new PluginLoaderConfig(cfg.PluginsFolder.Value);
@@ -83,6 +85,7 @@ namespace Bloodpebble
                     break;
             }
             _eventLogger.Subscribe(pluginLoader);
+            _pluginLoader = pluginLoader;
 
             // todo: config option to choose... maybe
             //_reloadRequestHandler = new ImmediateReloadRequestHandler(pluginLoader, Log);
@@ -106,9 +109,35 @@ namespace Bloodpebble
 
             var reloadViaRCON = ReloadViaRCON.Initialize();
             _reloadRequestHandler.Subscribe(reloadViaRCON);
+        }
 
+        private void DoInitialPluginsLoad()
+        {
+            if (_pluginLoader is null)
+            {
+                throw new Exception("_pluginLoader is null");
+            }
             Log.LogInfo("Starting the Initial load of plugins.");
-            pluginLoader.ReloadAll();
+            _pluginLoader.ReloadAll();
+        }
+
+        private void DoInitialPluginsLoad_After_BepInExLoadedOtherPlugins()
+        {
+            // todo: see if there's something in bepinex that could be subscribed to,
+            // instead of assuming that it will be finished before the next OnUpdate.
+            // A harmony patch probably wouldn't work, because the target method would already be in the middle of execution. (loading bloodpebble)
+            Hooks.GameFrame.OnUpdate += runOnce;
+            void runOnce()
+            {
+                try
+                {
+                    DoInitialPluginsLoad();
+                }
+                finally
+                {
+                    Hooks.GameFrame.OnUpdate -= runOnce;
+                }
+            }
         }
         
     }
