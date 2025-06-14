@@ -43,7 +43,6 @@ internal class ReloadViaRCON : BaseReloadRequestor
             {
                 return "Error: missing ReloadViaRCON instance";
             }
-            BloodpebblePlugin.Logger.LogInfo("Reloading all plugins (triggered by RCON)..."); // todo: should move this logging into the request handler, not the requester
             var result = await Instance.RequestFullReloadAsync();
             var pluginNames = result.PluginsReloaded.Select(p => p.Metadata.Name);
 
@@ -81,7 +80,6 @@ internal class ReloadViaRCON : BaseReloadRequestor
                 return "Error: Plugin GUID not provided.";
             }
 
-            BloodpebblePlugin.Logger.LogInfo($"Reloading plugin {guid} (triggered by RCON)...");  // todo: should move this logging into the request handler, not the requester
             var result = await Instance.RequestPartialReloadAsync([guid]);
             var otherPluginNames = result.PluginsReloaded.Where(p => p.Metadata.GUID != guid).Select(p => p.Metadata.Name);
 

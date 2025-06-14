@@ -14,12 +14,10 @@ namespace Bloodpebble.ReloadRequestHandling;
 /// </summary>
 class ImmediateReloadRequestHandler : BaseReloadRequestHandler
 {
-    private IPluginLoader _pluginLoader;
     private ManualLogSource _log;
 
-    public ImmediateReloadRequestHandler(IPluginLoader pluginLoader,  ManualLogSource log)
+    public ImmediateReloadRequestHandler(IPluginLoader pluginLoader,  ManualLogSource log) : base(pluginLoader)
     {
-        _pluginLoader = pluginLoader;
         _log = log;
     }
 
@@ -29,7 +27,8 @@ class ImmediateReloadRequestHandler : BaseReloadRequestHandler
         bool faulted = false;
         try
         {
-            pluginsReloaded = _pluginLoader.ReloadAll();
+            OnFullReloadStarting([request], []);
+            pluginsReloaded = PluginLoader.ReloadAll();
         }
         catch (Exception ex)
         {
@@ -50,7 +49,8 @@ class ImmediateReloadRequestHandler : BaseReloadRequestHandler
         bool faulted = false;
         try
         {
-            pluginsReloaded = _pluginLoader.ReloadGiven(request.PluginGuidsToReload);
+            OnPartialReloadStarting([request], request.PluginGuidsToReload.ToHashSet());
+            pluginsReloaded = PluginLoader.ReloadGiven(request.PluginGuidsToReload);
         }
         catch (Exception ex)
         {

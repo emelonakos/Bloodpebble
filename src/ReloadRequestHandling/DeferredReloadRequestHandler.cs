@@ -17,16 +17,14 @@ namespace Bloodpebble.ReloadRequestHandling;
 /// </summary>
 class DeferredReloadRequestHandler : BaseReloadRequestHandler
 {
-    private IPluginLoader _pluginLoader;
     private ManualLogSource _log;
 
     private ConcurrentQueue<FullReloadRequest> _fullReloadRequests = new();
     private ConcurrentQueue<PartialReloadRequest> _partialReloadRequests = new();
     private bool _shouldUpdate = false;
 
-    public DeferredReloadRequestHandler(IPluginLoader pluginLoader, ManualLogSource log)
+    public DeferredReloadRequestHandler(IPluginLoader pluginLoader, ManualLogSource log) : base(pluginLoader)
     {
-        _pluginLoader = pluginLoader;
         _log = log;
     }
 
@@ -61,11 +59,13 @@ class DeferredReloadRequestHandler : BaseReloadRequestHandler
         {
             if (isFullReload)
             {
-                pluginsReloaded = _pluginLoader.ReloadAll();
+                OnFullReloadStarting(fullReloadRequests, partialReloadRequests);
+                pluginsReloaded = PluginLoader.ReloadAll();
             }
             else
             {
-                pluginsReloaded = _pluginLoader.ReloadGiven(allRequestedPluginGuids);
+                OnPartialReloadStarting(partialReloadRequests, allRequestedPluginGuids);
+                pluginsReloaded = PluginLoader.ReloadGiven(allRequestedPluginGuids);
             }
         }
         catch (Exception ex)

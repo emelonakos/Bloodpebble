@@ -58,7 +58,6 @@ internal class ReloadViaFileSystemChanges : BaseReloadRequestor
         if (autoReloadTimer <= .0f)
         {
             _isPendingAutoReload = false;
-            BloodpebblePlugin.Logger.LogInfo("Automatically reloading plugins..."); // todo: this logging should be moved to the handler, not the requester
             RequestFullReloadAsync();
         }
     }

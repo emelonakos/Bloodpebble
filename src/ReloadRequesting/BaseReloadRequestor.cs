@@ -19,7 +19,8 @@ internal abstract class BaseReloadRequestor : IReloadRequestor
 
     protected void RequestFullReload(Action<FullReloadResult> responseHandler)
     {
-        var request = new FullReloadRequest(responseHandler);
+        var requesterName = GetType().Name;
+        var request = new FullReloadRequest(this, responseHandler);
         FullReloadRequested?.Invoke(this, new FullReloadRequestedEventArgs(request));
     }
 
@@ -32,7 +33,8 @@ internal abstract class BaseReloadRequestor : IReloadRequestor
 
     protected void RequestPartialReload(IEnumerable<string> pluginGuidsToReload, Action<PartialReloadResult> responseHandler)
     {
-        var request = new PartialReloadRequest(pluginGuidsToReload, responseHandler);
+        var requesterName = GetType().Name;
+        var request = new PartialReloadRequest(this, responseHandler, pluginGuidsToReload);
         PartialReloadRequested?.Invoke(this, new PartialReloadRequestedEventArgs(request));
     }
 

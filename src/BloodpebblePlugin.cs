@@ -1,5 +1,7 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
+using System.Text;
 using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
@@ -22,6 +24,7 @@ namespace Bloodpebble
         internal static BloodpebblePlugin Instance { get; private set; }
 #nullable enable
         private readonly BloodpebbleConfig cfg;
+        private readonly EventLogger _eventLogger;
 
         private IReloadRequestHandler? _reloadRequestHandler;
         private ReloadViaChatCommand? _reloadViaChatCommand;
@@ -33,6 +36,7 @@ namespace Bloodpebble
             BloodpebblePlugin.Logger = Log;
             Instance = this;
             cfg = new BloodpebbleConfig(Config);
+            _eventLogger = new EventLogger(Log);
         }
 
         public override void Load()
@@ -48,6 +52,7 @@ namespace Bloodpebble
 
         public override bool Unload()
         {
+            _eventLogger.Unsubscribe();
             _reloadRequestHandler?.Dispose();
             ReloadViaRCON.Uninitialize();
             _reloadViaFileSystemChanges?.Dispose();
@@ -77,11 +82,12 @@ namespace Bloodpebble
                     pluginLoader = new BasicPluginLoader(loaderConfig);
                     break;
             }
-            pluginLoader.ReloadedAllPlugins += HandleReloadedAllPlugins;
+            _eventLogger.Subscribe(pluginLoader);
 
             // todo: config option to choose... maybe
             //_reloadRequestHandler = new ImmediateReloadRequestHandler(pluginLoader, Log);
             _reloadRequestHandler = new LateUpdateReloadRequestHandler(pluginLoader, Log);
+            _eventLogger.Subscribe(_reloadRequestHandler);
 
             _reloadViaChatCommand = new ReloadViaChatCommand(cfg.ReloadCommand.Value);
             _reloadRequestHandler.Subscribe(_reloadViaChatCommand);
@@ -100,21 +106,9 @@ namespace Bloodpebble
 
             var reloadViaRCON = ReloadViaRCON.Initialize();
             _reloadRequestHandler.Subscribe(reloadViaRCON);
-            
-            pluginLoader.ReloadAll();
-        }
 
-        private void HandleReloadedAllPlugins(object? sender, ReloadedAllPluginsEventArgs e)
-        {
-            if (e.LoadedPlugins.Count > 0)
-            {
-                var pluginNames = e.LoadedPlugins.Select(plugin => plugin.Metadata.Name);
-                Log.LogInfo($"Reloaded {string.Join(", ", pluginNames)}.");
-            }
-            else
-            {
-                Log.LogInfo($"Did not reload any plugins.");
-            }
+            Log.LogInfo("Starting the Initial load of plugins.");
+            pluginLoader.ReloadAll();
         }
         
     }

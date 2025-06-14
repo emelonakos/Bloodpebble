@@ -24,7 +24,6 @@ internal class ReloadViaKeyPress : BaseReloadRequestor
     {
         if (UnityEngine.Input.GetKeyDown(_reloadKeyCode))
         {
-            BloodpebblePlugin.Logger.LogInfo("Reloading client plugins..."); // todo: move logging to request handler, not requester
             RequestFullReloadAsync();
         }
     }
