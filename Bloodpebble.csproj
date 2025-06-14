@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.2.1</Version>
+    <Version>1.3.0</Version>
     <PackageId>VRising.Bloodpebble</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Authors>cheesasaurus, deca, molenzwiebel</Authors>
