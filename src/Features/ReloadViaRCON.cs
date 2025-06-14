@@ -26,17 +26,7 @@ internal class ReloadViaRCON : BaseReloadRequestor
     [RconCommandCategory("Server Administration")]
     public static class RconCommands
     {
-        // todo: async RCON commands
         [RconCommand("reloadplugins", "Reloads all plugins in the BloodpebblePlugins folder")]
-        public static string ReloadAll()
-        {
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            ReloadAllAsync();
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            return $"will attempt to reload all plugins (async RCON commands not yet supported)";
-        }
-
-        //[RconCommand("reloadplugins", "Reloads all plugins in the BloodpebblePlugins folder")]
         public async static Task<string> ReloadAllAsync()
         {
             if (Instance is null)
@@ -58,17 +48,7 @@ internal class ReloadViaRCON : BaseReloadRequestor
             }
         }
 
-        // todo: async RCON commands
         [RconCommand("reloadplugin", "Reloads a single plugin by its GUID", "reloadplugin <PluginGUID>")]
-        public static string ReloadOne(string guid)
-        {
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            ReloadOneAsync(guid);
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            return $"will attempt to reload plugin {guid}  (async RCON commands not yet supported)";
-        }
-
-        //[RconCommand("reloadplugin", "Reloads a single plugin by its GUID", "reloadplugin <PluginGUID>")]
         public async static Task<string> ReloadOneAsync(string guid)
         {
             if (Instance is null)
