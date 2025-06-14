@@ -63,7 +63,7 @@
     <WriteLinesToFile Lines="$(ThunderstoreManifestContent)" File="dist/temp/thunderstore/manifest.json" WriteOnlyWhenDifferent="true" Overwrite="true" />
     <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="dist/temp/thunderstore" />
     <Copy SourceFiles="icon.png" DestinationFolder="dist/temp/thunderstore"/>
-    <Copy SourceFiles="README.md" DestinationFolder="dist/temp/thunderstore"/>
+    <Copy SourceFiles="README-thunderstore.md" DestinationFiles="dist/temp/thunderstore/README.md"/>
     <Copy SourceFiles="CHANGELOG.md" DestinationFolder="dist/temp/thunderstore"/>
     <ZipDirectory SourceDirectory="dist/temp/thunderstore" DestinationFile="$(ThunderstoreZipFile)" Overwrite="true"></ZipDirectory>
     <RemoveDir Directories="dist/temp/"/>

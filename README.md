@@ -1,59 +1,36 @@
-
 # Bloodpebble
 
 ![bloodpebble-banner](https://github.com/cheesasaurus/Bloodpebble/raw/main/bloodpebble-banner.png)
 
-Bloodpebble is a lightweight alternative to [Bloodstone](https://github.com/decaprime/Bloodstone). It allows reloading plugins without restarting the game.
+Bloodpebble is a modding tool for the game [V Rising](https://playvrising.com/) . It allows reloading BepInEx plugins without restarting the game.
 
-Differences from Bloodstone:
-- Bloodpebble is only responsible for hot-reloading.
-  - Bloodstone provides functionality for other things. ergo Bloodpebble has a lower maintenance cost when VRising updates.
-- Bloodpebble checks plugin dependencies to load them in the correct order. 
-  - Bloodstone does not. Working on a library for other plugins to use? Choose Bloodpebble for your hot-reloading needs.
-- Bloodpebble is not required as a dependency. Simply drop your plugins into the BloodpebblePlugins folder and you're good to go.
-  - Bloodstone can only reload plugins if they opt-in using its API. Broken bloodstone = broken dependent plugins.
-- Bloodpebble can automatically reload plugins when files are changed in the BloodpebblePlugins folder.
-  - Bloodstone cannot. A manual reload is required.
+See the [thunderstore readme](README-thunderstore.md) for information about features, how to use it, etc.
 
-### Installation
+## Objectives
 
-- Install [BepInEx](https://v-rising.thunderstore.io/package/BepInEx/BepInExPack_V_Rising/).
-- Extract _Bloodpebble.dll_ into _`(VRising folder)/BepInEx/plugins`_.
-- Optional: extract any reloadable additional plugins into _`(VRising folder)/BepInEx/BloodpebblePlugins`_.
 
-### Configuration
+- Bloodpebble has one job only: hot reloading plugins. It should do it well. And do nothing else.
+- Plugin dependencies should be correctly resolved. Dependencies can also be hot reloaded, or already exist via the usual bepinex loading process.
+- Bloodpebble should never be a dependency of other plugins. Any interfacing (e.g. opting in/out of reloads) should be done in ways that don't require a library or exposing Bloodpebble internals.
+- Bloodpebble should never have a hard dependency on another plugin.
+- Plugin reloading should be robust. An error with one plugin should have minimal impact on the loading of other plugins.
+- Errors should be handled in a way that makes troubleshooting as easy as possible.
+- When it comes to tradeoffs, let the user decide via configuration.
 
-Bloodpebble supports the following configuration settings, available in `BepInEx/config/Bloodpebble.cfg`.
+## History
+Bloodpebble started as a fork of [Bloodstone](https://github.com/decaprime/Bloodstone), with the goal of adding dependency resolution, and simply getting merged back into the mainline.
 
-**Client/Server Options:**
-- `ReloadablePluginsFolder` [default `BepInEx/BloodpebblePlugins`]: The path to the directory where reloadable plugins should be searched. Relative to the game directory.
-- `EnableAutoReload` [default `true`]: Automatically reloads all plugins if any of the files get changed (added/removed/modified).
-- `AutoReloadDelaySeconds` [default: `2`]: Delay in seconds before auto reloading.
+But major game updates repeatedly exposed problems revolving around Bloodstone. Aiming to avoid those problems,  Bloodpebble ended up evolving into a different project with different objectives.
 
-**Client Options:**
-- The keybinding to reload is F6. Not currently configurable.
+## Developer Documentation
 
-**Server Options:**
-- `ReloadCommand` [default `!reload`]: Which text command (sent in chat) should be used to trigger reloading of plugins.\
-User must first be AdminAuth'd (accomplished via console command).
+### Project setup
 
-### RCON
+1. Setup links to the bepinex libraries and game interops. See the [vendor readme](vendor/README.md) for more information.
+2. Restore with `dotnet restore`
 
-If [ScarletRCON](https://thunderstore.io/c/v-rising/p/ScarletMods/ScarletRCON/) is installed, bloodpebble will provide an RCON command to reload.
-- `bloodpebble.reloadplugins` : Reload all valid plugins.
-- `bloodpebble.reloadplugin <PluginGUID>` : Reload one plugin. Other plugins (e.g. dependents) can also be reloaded.
-
-### Disclaimer
-
-Not every plugin is going to be reloadable. You will still have to put some things in the usual BepInEx Plugins folder.
-
-Notes for plugin developers:
-- The assembly must be collectible. [This imposes restrictions.](https://learn.microsoft.com/en-us/dotnet/fundamentals/reflection/collectible-assemblies#restrictions-on-collectible-assemblies)
-- Your plugin should implement the [Unload](https://docs.bepinex.dev/master/api/BepInEx.Unity.IL2CPP.BasePlugin.html) method to release any resources, unregister hooks, etc.
-  - In particular, make sure you cleanup [anything that would affect its lifetime](https://learn.microsoft.com/en-us/dotnet/fundamentals/reflection/collectible-assemblies#lifetime-of-collectible-assemblies).
-
-### Support
-
-Join the [modding community](https://vrisingmods.com/discord).
-
-Post an issue on the [GitHub repository](https://github.com/cheesasaurus/Bloodpebble). 
+### Building
+- Build with `dotnet build`
+- Build more things with `dotnet publish`
+  - Outputs the thunderstore package into `dist/`
+  - Also outputs `Bloodpebble.dll` into `dist/`
