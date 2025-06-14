@@ -22,8 +22,6 @@ interface IPluginLoader : ITriggersPluginLoaderEvents
     /// </summary>
     public bool TryReloadPlugin(string guid, [NotNullWhen(true)] out PluginInfo? freshPlugin);
 
-    // unload all loaded plugins
-
     /// <summary>
     ///     Unload all loaded plugins.
     /// </summary>

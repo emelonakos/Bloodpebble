@@ -1,3 +1,13 @@
+# 1.3.0
+- Plugin reloading now always happens during the LateUpdate phase of the [Unity event loop](https://docs.unity3d.com/Manual/execution-order.html).
+  - previously varied depending on how the reload was triggered, which could cause issues when happening in the middle of Systems updates.
+- Added `Islands` loading strategy, courtesy of [@Darreans](https://github.com/Darreans).
+- Loading strategy can be chosen via config. Two options:
+  - `Basic`: Robust, but slow if you have a lot of plugins and only want to reload one.
+  - `Islands`: Fragile, but potentially faster when you have a lot of plugins and only want to reload one.
+- Added `!reloadone <PluginGUID>` chat command for use with the `Islands` loading strategy.
+- Added `bloodpebble.reloadplugin <PluginGUID>` RCON command for use with the `Islands` loading strategy.
+
 # 1.2.1
 - Added disclaimer section to README, explaining that not every plugin can be reloaded.
 - Added brief documentation to README to help developers make their plugins reloadable.

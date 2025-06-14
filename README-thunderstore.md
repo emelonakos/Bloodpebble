@@ -29,6 +29,7 @@ Bloodpebble supports the following configuration settings, available in `BepInEx
 - `ReloadablePluginsFolder` [default `BepInEx/BloodpebblePlugins`]: The path to the directory where reloadable plugins should be searched. Relative to the game directory.
 - `EnableAutoReload` [default `true`]: Automatically reloads all plugins if any of the files get changed (added/removed/modified).
 - `AutoReloadDelaySeconds` [default: `2`]: Delay in seconds before auto reloading.
+- `LoadingStrategy` [default: `Basic`]: The strategy to use for reloading plugins. Choose which tradeoffs to make.
 
 **Client Options:**
 - The keybinding to reload is F6. Not currently configurable.
@@ -42,6 +43,7 @@ User must first be AdminAuth'd (accomplished via console command).
 If [ScarletRCON](https://thunderstore.io/c/v-rising/p/ScarletMods/ScarletRCON/) is installed, bloodpebble will provide an RCON command to reload.
 - `bloodpebble.reloadplugins` : Reload all valid plugins.
 - `bloodpebble.reloadplugin <PluginGUID>` : Reload one plugin. Other plugins (e.g. dependents) can also be reloaded.
+  - Recommended to use with the `Islands` loading strategy. Currently no benefit otherwise.
 
 ### Disclaimer
 
