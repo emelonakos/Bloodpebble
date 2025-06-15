@@ -7,6 +7,8 @@ namespace Bloodpebble.ReloadExecution;
 #nullable disable
 
 // workaround to let us do things normally restricted to BepInEx internals. e.g. setting properties
+// TODO: this doesn't seem to actually work around anything. See if there's another way.
+// maybe InternalsVisibleTo assembly attribute
 class PluginInfo : BepInEx.PluginInfo
 {
     /// <summary>

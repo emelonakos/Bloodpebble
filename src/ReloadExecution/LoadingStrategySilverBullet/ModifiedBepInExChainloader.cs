@@ -41,26 +41,6 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
         _assemblyResolver.AddSearchDirectory(Path.Combine(Paths.BepInExRootPath, "interop"));
     }
 
-    public void UnloadPluginAssembly(string pluginGuid)
-    {
-        if (_loadContextLookupByPluginGuid.Remove(pluginGuid, out var loadContext))
-        {
-            loadContext.Unload();
-        }
-
-        if (_assemblyLookupByPluginGuid.Remove(pluginGuid, out var assembly))
-        {
-            if (assembly.FullName is null)
-            {
-                BloodpebblePlugin.Logger.LogWarning($"Assembly for {pluginGuid} has no FullName.");
-            }
-            else
-            {
-                _assemblyLookupByFullName.Remove(assembly.FullName);
-            }
-        }
-    }
-
     private BloodpebbleLoadContext CreateNewAssemblyLoadContext(string pluginGuid)
     {
         return new BloodpebbleLoadContext(name: $"BloodpebbleContext-{pluginGuid}", _assemblyLookupByFullName);
@@ -232,6 +212,47 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
         {
             BloodpebblePlugin.Logger.Log(LogLevel.Warning,
                        $"Couldn't run Module constructor for {assembly.FullName}::{plugin.TypeName}: {e}");
+        }
+    }
+
+    public void UnloadPlugin(PluginInfo plugin)
+    {
+        var pluginInstance = (BasePlugin)plugin.Instance;
+        var assemblyName = pluginInstance.GetType().Assembly.GetName();
+        var pluginName = $"{assemblyName.Name} {assemblyName.Version}";
+        try
+        {
+            bool unloadSuccessful = pluginInstance.Unload();
+            if (!unloadSuccessful)
+            {
+                BloodpebblePlugin.Logger.LogWarning($"Plugin {pluginName} might not be reloadable. (Plugin.Unload returned false)");
+            }
+        }
+        catch (Exception ex)
+        {
+            BloodpebblePlugin.Logger.LogError($"Error unloading plugin {pluginName}: {ex}");
+        }
+        UnloadPluginAssembly(plugin.Metadata.GUID);
+        Plugins.Remove(plugin.Metadata.GUID);
+    }
+
+    public void UnloadPluginAssembly(string pluginGuid)
+    {
+        if (_loadContextLookupByPluginGuid.Remove(pluginGuid, out var loadContext))
+        {
+            loadContext.Unload();
+        }
+
+        if (_assemblyLookupByPluginGuid.Remove(pluginGuid, out var assembly))
+        {
+            if (assembly.FullName is null)
+            {
+                BloodpebblePlugin.Logger.LogWarning($"Assembly for {pluginGuid} has no FullName.");
+            }
+            else
+            {
+                _assemblyLookupByFullName.Remove(assembly.FullName);
+            }
         }
     }
 

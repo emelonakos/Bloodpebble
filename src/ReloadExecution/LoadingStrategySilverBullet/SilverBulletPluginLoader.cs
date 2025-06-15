@@ -52,25 +52,7 @@ class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
     {
         for (int i = _plugins.Count - 1; i >= 0; i--)
         {
-            var pluginInfo = _plugins[i];
-            var plugin = (BasePlugin)_plugins[i].Instance;
-            var assemblyName = plugin.GetType().Assembly.GetName();
-            var pluginName = $"{assemblyName.Name} {assemblyName.Version}";
-
-            try
-            {
-                if (!plugin.Unload())
-                {
-                    BloodpebblePlugin.Logger.LogWarning($"Plugin {pluginName} might not be reloadable. (Plugin.Unload returned false)");
-                }
-            }
-            catch (Exception ex)
-            {
-                BloodpebblePlugin.Logger.LogError($"Error unloading plugin {pluginName}:");
-                BloodpebblePlugin.Logger.LogError(ex);
-            }
-            _bepinexChainloader.UnloadPluginAssembly(pluginInfo.Metadata.GUID);
-            _bepinexChainloader.Plugins.Remove(pluginInfo.Metadata.GUID);
+            _bepinexChainloader.UnloadPlugin(_plugins[i]);
             _plugins.RemoveAt(i);
         }
     }
