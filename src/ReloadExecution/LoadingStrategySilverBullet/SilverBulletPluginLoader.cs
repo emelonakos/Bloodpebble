@@ -69,10 +69,10 @@ class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
                 BloodpebblePlugin.Logger.LogError($"Error unloading plugin {pluginName}:");
                 BloodpebblePlugin.Logger.LogError(ex);
             }
+            _bepinexChainloader.UnloadPluginAssembly(pluginInfo.Metadata.GUID);
             _bepinexChainloader.Plugins.Remove(pluginInfo.Metadata.GUID);
             _plugins.RemoveAt(i);
         }
-        _bepinexChainloader.UnloadAssemblies();
     }
 
 }

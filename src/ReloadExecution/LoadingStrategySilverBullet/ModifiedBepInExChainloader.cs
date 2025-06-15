@@ -14,6 +14,7 @@ using Mono.Cecil;
 using BepInEx.Bootstrap;
 using Unity.Collections;
 using System.Runtime.Loader;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Bloodpebble.ReloadExecution.LoadingStrategySilverBullet;
 
@@ -30,6 +31,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
 
     private Dictionary<string, BloodpebbleLoadContext> _loadContextLookupByPluginGuid = new();
     private Dictionary<string, Assembly> _assemblyLookupByFullName = new();
+    private Dictionary<string, Assembly> _assemblyLookupByPluginGuid = new();
 
     public ModifiedBepInExChainloader()
     {
@@ -39,14 +41,24 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
         _assemblyResolver.AddSearchDirectory(Path.Combine(Paths.BepInExRootPath, "interop"));
     }
 
-    public void UnloadAssemblies()
+    public void UnloadPluginAssembly(string pluginGuid)
     {
-        foreach (var loadContext in _loadContextLookupByPluginGuid.Values)
+        if (_loadContextLookupByPluginGuid.Remove(pluginGuid, out var loadContext))
         {
             loadContext.Unload();
         }
-        _loadContextLookupByPluginGuid.Clear();
-        _assemblyLookupByFullName.Clear();
+
+        if (_assemblyLookupByPluginGuid.Remove(pluginGuid, out var assembly))
+        {
+            if (assembly.FullName is null)
+            {
+                BloodpebblePlugin.Logger.LogWarning($"Assembly for {pluginGuid} has no FullName.");
+            }
+            else
+            {
+                _assemblyLookupByFullName.Remove(assembly.FullName);
+            }
+        }
     }
 
     private BloodpebbleLoadContext CreateNewAssemblyLoadContext(string pluginGuid)
@@ -137,6 +149,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
                     ms.Seek(0, SeekOrigin.Begin);
                     loadedAssemblies[plugin.Location] = assembly = loadContext.LoadFromStream(ms);
 
+                    _assemblyLookupByPluginGuid.Add(pluginGuid, assembly);
                     _assemblyLookupByFullName.Add(assembly.FullName, assembly);
                 }
 
