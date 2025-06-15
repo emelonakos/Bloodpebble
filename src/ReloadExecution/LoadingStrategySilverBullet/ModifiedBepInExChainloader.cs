@@ -51,7 +51,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
 
     private BloodpebbleLoadContext CreateNewAssemblyLoadContext(string pluginGuid)
     {
-        return new BloodpebbleLoadContext(name: $"BloodpebbleContext-{pluginGuid}", _loadContextLookupByPluginGuid, _assemblyLookupByFullName);
+        return new BloodpebbleLoadContext(name: $"BloodpebbleContext-{pluginGuid}", _assemblyLookupByFullName);
     }
 
     public IList<PluginInfo> LoadPlugins(IList<BepInEx.PluginInfo> plugins)
