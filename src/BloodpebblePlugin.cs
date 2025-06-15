@@ -9,6 +9,7 @@ using Bloodpebble.Features;
 using Bloodpebble.ReloadExecution;
 using Bloodpebble.ReloadExecution.LoadingStategyBasic;
 using Bloodpebble.ReloadExecution.LoadingStrategyIslands;
+using Bloodpebble.ReloadExecution.LoadingStrategySilverBullet;
 using Bloodpebble.ReloadRequestHandling;
 using Bloodpebble.ReloadRequesting;
 using Bloodpebble.Utils;
@@ -77,6 +78,10 @@ namespace Bloodpebble
             {
                 case "islands":
                     pluginLoader = new IslandsPluginLoader(loaderConfig);
+                    break;
+
+                case "silverbullet":
+                    pluginLoader = new SilverBulletPluginLoader(loaderConfig);
                     break;
 
                 default: // default to basic
