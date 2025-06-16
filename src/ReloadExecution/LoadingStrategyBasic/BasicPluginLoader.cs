@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using BepInEx;
 using BepInEx.Unity.IL2CPP;
-using ProjectM;
 
 namespace Bloodpebble.ReloadExecution.LoadingStategyBasic;
 
@@ -26,21 +24,17 @@ class BasicPluginLoader : BasePluginLoader, IPluginLoader
     public IList<PluginInfo> ReloadAll()
     {
         UnloadAll();
-
-        // first, make sure the bepinex chainloader knows about existing non-reloadable plugins that may be dependencies
-        var normalPlugins = IL2CPPChainloader.Instance.Plugins;
-        normalPlugins.ToList().ForEach(x => _bepinexChainloader.Plugins[x.Key] = x.Value);
-
-        // load the additional plugins
-        var loadedPlugins = _bepinexChainloader.LoadPlugins(_config.PluginsPath);
-        _plugins = loadedPlugins;
+        var loadedPlugins = LoadAll();
         OnReloadedAllPlugins(loadedPlugins);
         return loadedPlugins;
     }
 
     public IList<PluginInfo> ReloadGiven(IEnumerable<string> pluginGUIDs)
     {
-        return ReloadAll();
+        UnloadAll();
+        var loadedPlugins = LoadAll();
+        // todo: trigger
+        return loadedPlugins;
     }
 
     public void UnloadAll()
@@ -68,6 +62,26 @@ class BasicPluginLoader : BasePluginLoader, IPluginLoader
             _plugins.RemoveAt(i);
         }
         _bepinexChainloader.UnloadAssemblies();
+    }
+
+    private IList<PluginInfo> LoadAll()
+    {
+        // first, make sure the bepinex chainloader knows about existing non-reloadable plugins that may be dependencies
+        var normalPlugins = IL2CPPChainloader.Instance.Plugins;
+        normalPlugins.ToList().ForEach(x => _bepinexChainloader.Plugins[x.Key] = x.Value);
+
+        // load the additional plugins
+        var loadedPlugins = _bepinexChainloader.LoadPlugins(_config.PluginsPath);
+        _plugins = loadedPlugins;
+        return loadedPlugins;
+    }
+
+    public IList<PluginInfo> ReloadChanges()
+    {
+        UnloadAll();
+        var loadedPlugins = LoadAll();
+        // todo: trigger
+        return loadedPlugins;
     }
 
 }

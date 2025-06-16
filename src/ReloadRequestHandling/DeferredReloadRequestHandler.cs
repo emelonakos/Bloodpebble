@@ -22,6 +22,7 @@ class DeferredReloadRequestHandler : BaseReloadRequestHandler
 
     private ConcurrentQueue<FullReloadRequest> _fullReloadRequests = new();
     private ConcurrentQueue<PartialReloadRequest> _partialReloadRequests = new();
+    private ConcurrentQueue<SoftReloadRequest> _softReloadRequests = new();
     private bool _shouldUpdate = false;
 
     public DeferredReloadRequestHandler(IPluginLoader pluginLoader, ManualLogSource log) : base(pluginLoader)
@@ -41,6 +42,12 @@ class DeferredReloadRequestHandler : BaseReloadRequestHandler
         _shouldUpdate = true;
     }
 
+    public override void HandleSoftReloadRequested(SoftReloadRequest request)
+    {
+        _softReloadRequests.Enqueue(request);
+        _shouldUpdate = true;
+    }
+
     public override void Update()
     {
         if (!_shouldUpdate)
@@ -51,22 +58,29 @@ class DeferredReloadRequestHandler : BaseReloadRequestHandler
 
         // perform requested reloads
 
-        (var fullReloadRequests, var partialReloadRequests, var allRequestedPluginGuids) = ExtractReloadRequests();
+        var (fullReloadRequests, partialReloadRequests, softReloadRequests, allRequestedPluginGuids) = ExtractReloadRequests();
 
         IEnumerable<PluginInfo> pluginsReloaded;
         bool faulted = false;
         bool isFullReload = fullReloadRequests.Any();
+        bool isPartialReload = !isFullReload && partialReloadRequests.Any();
+        // todo: probably better to use a reload type enum
         try
         {
             if (isFullReload)
             {
-                OnFullReloadStarting(fullReloadRequests, partialReloadRequests);
+                OnFullReloadStarting(fullReloadRequests, partialReloadRequests, softReloadRequests);
                 pluginsReloaded = PluginLoader.ReloadAll();
             }
-            else
+            else if (isPartialReload)
             {
                 OnPartialReloadStarting(partialReloadRequests, allRequestedPluginGuids);
                 pluginsReloaded = PluginLoader.ReloadGiven(allRequestedPluginGuids);
+            }
+            else
+            {
+                OnSoftReloadStarting(softReloadRequests);
+                pluginsReloaded = PluginLoader.ReloadChanges();
             }
         }
         catch (Exception ex)
@@ -88,12 +102,24 @@ class DeferredReloadRequestHandler : BaseReloadRequestHandler
         {
             RespondToPartialReloadRequest(request, pluginsReloaded, reloadedPluginGuids, allRequestedPluginGuids, faulted, isFullReload);
         }
+
+        foreach (var request in softReloadRequests)
+        {
+            RespondToSoftReloadRequest(request, pluginsReloaded, faulted, isFullReload, isPartialReload);
+        }
     }
 
-    private (List<FullReloadRequest> fullReloadRequests, List<PartialReloadRequest> partialReloadRequests, HashSet<string> allRequestedPluginGuids) ExtractReloadRequests()
+    private (
+        List<FullReloadRequest> fullReloadRequests,
+        List<PartialReloadRequest> partialReloadRequests,
+        List<SoftReloadRequest> softReloadRequests,
+        HashSet<string> allRequestedPluginGuids
+    )
+    ExtractReloadRequests()
     {
         List<FullReloadRequest> fullReloadRequests = new();
         List<PartialReloadRequest> partialReloadRequests = new();
+        List<SoftReloadRequest> softReloadRequests = new();
         HashSet<string> allRequestedPluginGuids = new();
 
         while (_fullReloadRequests.TryDequeue(out var request))
@@ -110,7 +136,12 @@ class DeferredReloadRequestHandler : BaseReloadRequestHandler
             }
         }
 
-        return (fullReloadRequests, partialReloadRequests, allRequestedPluginGuids);
+        while (_softReloadRequests.TryDequeue(out var request))
+        {
+            softReloadRequests.Add(request);
+        }
+
+        return (fullReloadRequests, partialReloadRequests, softReloadRequests, allRequestedPluginGuids);
     }
 
     private void RespondToFullReloadRequest(FullReloadRequest request, IEnumerable<PluginInfo> pluginsReloaded, bool faulted)
@@ -145,6 +176,23 @@ class DeferredReloadRequestHandler : BaseReloadRequestHandler
                 PluginsReloaded: pluginsReloaded,
                 Status: PartialReloadResultStatus(faulted, requestedPluginGuids, reloadedPluginGuids),
                 WasSuperseded: wasFullReload || requestedPluginGuids.IsProperSubsetOf(allRequestedPluginGuids)
+            ));
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex);
+        }
+    }
+
+    private void RespondToSoftReloadRequest(SoftReloadRequest request, IEnumerable<PluginInfo> pluginsReloaded, bool faulted, bool wasFullReload, bool wasPartialReload)
+    {
+        // todo: partial vs full success
+        try
+        {
+            request.Respond(new SoftReloadResult(
+                PluginsReloaded: pluginsReloaded,
+                Status: faulted ? ReloadResultStatus.Faulted : ReloadResultStatus.Success,
+                WasSuperseded: wasFullReload || wasPartialReload
             ));
         }
         catch (Exception ex)

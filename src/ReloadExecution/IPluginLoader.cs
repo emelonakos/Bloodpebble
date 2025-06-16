@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using BepInEx;
 
 namespace Bloodpebble.ReloadExecution;
@@ -17,6 +16,11 @@ interface IPluginLoader : ITriggersPluginLoaderEvents
     ///     (Re)load the given plugins. Other plugins (e.g. dependents) can also be reloaded.
     /// </summary>
     public IList<PluginInfo> ReloadGiven(IEnumerable<string> pluginGUIDs);
+
+    /// <summary>
+    ///     (Re)load based on changed files. Other plugins (e.g. dependents) can also be reloaded.
+    /// </summary>
+    public IList<PluginInfo> ReloadChanges();
 
     /// <summary>
     ///     Unload all loaded plugins.

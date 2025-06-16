@@ -27,17 +27,16 @@ internal class ReloadViaRCON : BaseReloadRequestor
     [RconCommandCategory("Server Administration")]
     public static class RconCommands
     {
-        [RconCommand("reloadplugins", "Reloads all plugins in the BloodpebblePlugins folder", "reloadplugins [hard]")]
-        public async static Task<string> ReloadAllAsync(string p1)
+        [RconCommand("reloadPluginsHard", "Reloads all plugins in the BloodpebblePlugins folder")]
+        public async static Task<string> ReloadHardAsync()
         {
-            if (p1.ToLowerInvariant().Equals("hard"))
-            {
-                return await ReloadHard();
-            }
-            else
-            {
-                return await ReloadSoft();
-            }           
+            return await ReloadHard();
+        }
+
+        [RconCommand("reloadPlugins", "Reloads changed plugins in the BloodpebblePlugins folder")]
+        public async static Task<string> ReloadSoftAsync()
+        {
+            return await ReloadSoft();           
         }
 
         private static async Task<string> ReloadSoft()

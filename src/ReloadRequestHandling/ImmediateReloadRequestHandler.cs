@@ -28,7 +28,7 @@ class ImmediateReloadRequestHandler : BaseReloadRequestHandler
         bool faulted = false;
         try
         {
-            OnFullReloadStarting([request], []);
+            OnFullReloadStarting([request], [], []);
             pluginsReloaded = PluginLoader.ReloadAll();
         }
         catch (Exception ex)
@@ -66,6 +66,29 @@ class ImmediateReloadRequestHandler : BaseReloadRequestHandler
         request.Respond(new PartialReloadResult(
             PluginsReloaded: pluginsReloaded,
             Status: PartialReloadResultStatus(faulted, requestedGuids, reloadedGuids),
+            WasSuperseded: false
+        ));
+    }
+
+    public override void HandleSoftReloadRequested(SoftReloadRequest request)
+    {
+        IEnumerable<PluginInfo> pluginsReloaded;
+        bool faulted = false;
+        try
+        {
+            OnSoftReloadStarting([request]);
+            pluginsReloaded = PluginLoader.ReloadAll();
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex);
+            pluginsReloaded = new List<PluginInfo>();
+            faulted = true;
+        }
+
+        request.Respond(new SoftReloadResult(
+            PluginsReloaded: pluginsReloaded,
+            Status: faulted ? ReloadResultStatus.Faulted : ReloadResultStatus.Success,
             WasSuperseded: false
         ));
     }

@@ -208,6 +208,14 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
             }
         }
 
+        public IList<PluginInfo> ReloadChanges()
+        {
+            UnloadAll();
+            var loadedPlugins = LoadPlugins(_config.PluginsPath);
+            // todo: trigger
+            return loadedPlugins;
+        }
+
         private Dictionary<string, List<string>> BuildNeighborhoods(IEnumerable<BepInEx.PluginInfo> plugins)
         {
             var neighborhoods = new Dictionary<string, List<string>>();

@@ -35,7 +35,7 @@ internal class ReloadViaChatCommand : BaseReloadRequestor
 
         if (command == _reloadCommand)
         {
-            ChatCommandReloadAllAsync(ev, msgParts);
+            ChatCommandReloadAsync(ev, msgParts);
         }
         else if (command == $"{_reloadCommand}one")
         {
@@ -43,11 +43,11 @@ internal class ReloadViaChatCommand : BaseReloadRequestor
         }
     }
 
-    private async void ChatCommandReloadAllAsync(VChatEvent ev, string[] msgParts)
+    private async void ChatCommandReloadAsync(VChatEvent ev, string[] msgParts)
     {
         IEnumerable<string> loadedPluginNames;
 
-        if (msgParts.Length >= 2 && msgParts[2].ToLowerInvariant().Equals("hard"))
+        if (msgParts.Length >= 2 && msgParts[1].ToLowerInvariant().Equals("hard"))
         {
             loadedPluginNames = await ReloadHard();
         }

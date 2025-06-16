@@ -69,7 +69,7 @@ internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
     private void UnloadGiven(IEnumerable<string> pluginGUIDs)
     {
         var pluginsToUnload = _reloadablePlugins.Values.Where(p => pluginGUIDs.Contains(p.Metadata.GUID));
-        _bepinexChainloader.ModifyLoadOrder(pluginsToUnload);
+        _bepinexChainloader.ModifyLoadOrder(pluginsToUnload); // todo: ModifyLoadOrder does a bunch of checks besides sorting. shouldn't use that for unloading. or maybe not for unloading either
         pluginsToUnload.Reverse(); // we are unloading, so go in opposite order of loading
 
         if (!pluginsToUnload.Any())
@@ -136,4 +136,13 @@ internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
         return discoveredPlugins.Where(p => pluginGuidsToLoad.Contains(p.Metadata.GUID)).ToList();
     }
 
+    public IList<PluginInfo> ReloadChanges()
+    {
+        // todo: implement
+        UnloadAll();
+        var loadedPlugins = LoadAll();
+        // todo: trigger
+        return loadedPlugins;
+    }
+    
 }

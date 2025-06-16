@@ -13,6 +13,7 @@ internal abstract class BaseReloadRequestHandler : IReloadRequestHandler
 
     public event EventHandler<FullReloadStartingEventArgs>? FullReloadStarting;
     public event EventHandler<PartialReloadStartingEventArgs>? PartialReloadStarting;
+    public event EventHandler<SoftReloadStartingEventArgs>? SoftReloadStarting;
 
     protected BaseReloadRequestHandler(IPluginLoader pluginLoader)
     {
@@ -24,6 +25,7 @@ internal abstract class BaseReloadRequestHandler : IReloadRequestHandler
         _subscriptions.Add(requestor);
         requestor.FullReloadRequested += HandleFullReloadRequested;
         requestor.PartialReloadRequested += HandlePartialReloadRequested;
+        requestor.SoftReloadRequested += HandleSoftReloadRequested;
     }
 
     public void Unsubscribe()
@@ -32,6 +34,7 @@ internal abstract class BaseReloadRequestHandler : IReloadRequestHandler
         {
             requestor.FullReloadRequested -= HandleFullReloadRequested;
             requestor.PartialReloadRequested -= HandlePartialReloadRequested;
+            requestor.SoftReloadRequested -= HandleSoftReloadRequested;
         }
         _subscriptions.Clear();
     }
@@ -46,18 +49,24 @@ internal abstract class BaseReloadRequestHandler : IReloadRequestHandler
         HandlePartialReloadRequested(ev.Request);
     }
 
+    public void HandleSoftReloadRequested(object? sender, SoftReloadRequestedEventArgs ev)
+    {
+        HandleSoftReloadRequested(ev.Request);
+    }
+
     virtual public void Dispose()
     {
         Unsubscribe();
     }
 
-    protected void OnFullReloadStarting(IEnumerable<FullReloadRequest> fullReloadRequests, IEnumerable<PartialReloadRequest> partialReloadRequests)
+    protected void OnFullReloadStarting(IEnumerable<FullReloadRequest> fullReloadRequests, IEnumerable<PartialReloadRequest> partialReloadRequests, IEnumerable<SoftReloadRequest> softReloadRequests)
     {
         FullReloadStarting?.Invoke(this, new FullReloadStartingEventArgs(
             requestHandler: this,
             pluginLoader: PluginLoader,
             fullReloadRequests,
-            partialReloadRequests
+            partialReloadRequests,
+            softReloadRequests
         ));
     }
 
@@ -71,8 +80,18 @@ internal abstract class BaseReloadRequestHandler : IReloadRequestHandler
         ));
     }
 
+    protected void OnSoftReloadStarting(IEnumerable<SoftReloadRequest> softReloadRequests)
+    {
+        SoftReloadStarting?.Invoke(this, new SoftReloadStartingEventArgs(
+            requestHandler: this,
+            pluginLoader: PluginLoader,
+            softReloadRequests
+        ));
+    }
+
     public abstract void HandleFullReloadRequested(FullReloadRequest request);
     public abstract void HandlePartialReloadRequested(PartialReloadRequest request);
+    public abstract void HandleSoftReloadRequested(SoftReloadRequest request);
     public abstract void Update();
 
     protected static ReloadResultStatus PartialReloadResultStatus(bool faulted, ISet<string> requestedGuids, ISet<string> reloadedGuids)
@@ -87,5 +106,5 @@ internal abstract class BaseReloadRequestHandler : IReloadRequestHandler
         }
         return ReloadResultStatus.Success;
     }
-    
+
 }

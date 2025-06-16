@@ -18,6 +18,7 @@ internal class EventLogger(ManualLogSource Log)
         _requestHandlerSubscriptions.Add(requestHandler);
         requestHandler.FullReloadStarting += HandleFullReloadStarting;
         requestHandler.PartialReloadStarting += HandlePartialReloadStarting;
+        requestHandler.SoftReloadStarting += HandleSoftReloadStarting;
     }
 
     public void Subscribe(IPluginLoader pluginLoader)
@@ -32,6 +33,7 @@ internal class EventLogger(ManualLogSource Log)
         {
             requestHandler.FullReloadStarting -= HandleFullReloadStarting;
             requestHandler.PartialReloadStarting -= HandlePartialReloadStarting;
+            requestHandler.SoftReloadStarting -= HandleSoftReloadStarting;
         }
         _requestHandlerSubscriptions.Clear();
 
@@ -46,6 +48,7 @@ internal class EventLogger(ManualLogSource Log)
     {
         var requestedByNames = ev.FullReloadRequests.Select(r => r.Requestor.GetType().Name);
         var partialRequestorNames = ev.PartialReloadRequests.Select(r => r.Requestor.GetType().Name);
+        var softRequestorNames = ev.SoftReloadRequests.Select(r => r.Requestor.GetType().Name);
 
         var sb = new StringBuilder()
             .AppendLine("Starting a Full reload of plugins.")
@@ -54,12 +57,19 @@ internal class EventLogger(ManualLogSource Log)
             .Append($"  Strategy: {ev.PluginLoader.GetType().Name}");
 
 
-        if (partialRequestorNames.Any())
+        if (partialRequestorNames.Any() || softRequestorNames.Any())
         {
             sb.AppendLine();
             sb.AppendLine($"  Supercedes other reload requests.");
-            sb.Append($"    Partial reload request(s) from: {string.Join(", ", partialRequestorNames)}");
-        }
+            if (partialRequestorNames.Any())
+            {
+                sb.Append($"    Partial reload request(s) from: {string.Join(", ", partialRequestorNames)}");
+            }
+            if (softRequestorNames.Any())
+            {
+                sb.Append($"    Soft reload request(s) from: {string.Join(", ", softRequestorNames)}");
+            }
+        }        
 
         Log.LogInfo(sb.ToString());
     }
@@ -74,6 +84,19 @@ internal class EventLogger(ManualLogSource Log)
             .AppendLine($"  Handler: {ev.RequestHandler.GetType().Name}")
             .AppendLine($"  Strategy: {ev.PluginLoader.GetType().Name}")
             .Append($"  Requested plugin GUIDs: {string.Join(", ", ev.AllRequestedPluginGuids)}");
+
+        Log.LogInfo(sb.ToString());
+    }
+
+    private void HandleSoftReloadStarting(object? sender, SoftReloadStartingEventArgs ev)
+    {
+        var requestedByNames = ev.SoftReloadRequests.Select(r => r.Requestor.GetType().Name);
+
+        var sb = new StringBuilder()
+            .AppendLine("Starting a Soft reload of plugins.")
+            .AppendLine($"  Requestor(s): {string.Join(", ", requestedByNames)}")
+            .AppendLine($"  Handler: {ev.RequestHandler.GetType().Name}")
+            .Append($"  Strategy: {ev.PluginLoader.GetType().Name}");
 
         Log.LogInfo(sb.ToString());
     }
