@@ -59,7 +59,7 @@ internal class DependencyGraph
         return true;
     }
 
-    internal void DfsWalkDescendentsForAdd(string ownVertexId, HashSet<string> ownDescendentIds, HashSet<string> ownAncestorIds, HashSet<string> visitedIds, string otherId)
+    private void DfsWalkDescendentsForAdd(string ownVertexId, HashSet<string> ownDescendentIds, HashSet<string> ownAncestorIds, HashSet<string> visitedIds, string otherId)
     {
         if (visitedIds.Contains(otherId))
         {
@@ -109,6 +109,34 @@ internal class DependencyGraph
         AncestorsLookup.Remove(vertexId);
         DirectDependenciesLookup.Remove(vertexId);
         return true;
+    }
+
+    internal ISet<string> FindAllVertexesToLoad(ISet<string> targetedVertexIdsToLoad)
+    {
+        var vertexIdsToLoad = new HashSet<string>();
+        vertexIdsToLoad.UnionWith(targetedVertexIdsToLoad);
+        foreach (var vertexId in targetedVertexIdsToLoad)
+        {
+            if (DescendentsLookup.TryGetValue(vertexId, out var descendentIds))
+            {
+                vertexIdsToLoad.UnionWith(descendentIds);
+            }
+        }
+        return vertexIdsToLoad;
+    }
+
+    internal ISet<string> FindAllVertexesToUnload(ISet<string> targetedVertexIdsToUnload)
+    {
+        var vertexIdsToUnload = new HashSet<string>();
+        vertexIdsToUnload.UnionWith(targetedVertexIdsToUnload);
+        foreach (var vertexId in targetedVertexIdsToUnload)
+        {
+            if (AncestorsLookup.TryGetValue(vertexId, out var ancestorIds))
+            {
+                vertexIdsToUnload.UnionWith(ancestorIds);
+            }
+        }
+        return vertexIdsToUnload;
     }
 
     public override string ToString()

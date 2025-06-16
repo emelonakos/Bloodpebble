@@ -46,6 +46,36 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
         return new BloodpebbleLoadContext(name: $"BloodpebbleContext-{pluginGuid}", _assemblyLookupByFullName);
     }
 
+    /// <summary>
+    /// Discovers all plugins in the plugin directory without loading them.
+    /// </summary>
+    /// <remarks>
+    /// This is useful for discovering BepInEx plugin metadata.
+    /// </remarks>
+    /// <param name="path">Path from which to search the plugins.</param>
+    /// <param name="cacheName">Cache name to use. If null, results are not cached.</param>
+    /// <returns>List of discovered plugins and their metadata.</returns>
+    public IList<BepInEx.PluginInfo> DiscoverPluginsFrom(string path)
+    {
+        return base.DiscoverPluginsFrom(path);
+    }
+
+    /// <summary>
+    /// Preprocess the plugins and modify the load order.
+    /// </summary>
+    /// <remarks>Some plugins may be skipped if they cannot be loaded (wrong metadata, etc).</remarks>
+    /// <param name="plugins">Plugins to process.</param>
+    /// <returns>List of plugins to load in the correct load order.</returns>
+    public IEnumerable<BepInEx.PluginInfo> ModifyLoadOrder(IEnumerable<BepInEx.PluginInfo> plugins)
+    {
+        if (plugins is null)
+        {
+            // todo: remove
+            BloodpebblePlugin.Logger.LogWarning("1. plugins is null");
+        }
+        return base.ModifyLoadOrder(plugins.ToList());
+    }
+
     public IList<PluginInfo> LoadPlugins(IList<BepInEx.PluginInfo> plugins)
     {
         var sortedPlugins = ModifyLoadOrder(plugins);
@@ -120,17 +150,23 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
                 {
                     var pluginGuid = plugin.Metadata.GUID;
                     var loadContext = CreateNewAssemblyLoadContext(pluginGuid);
-                    _loadContextLookupByPluginGuid[pluginGuid] = loadContext;
 
                     // Create and load a copy of the assembly, to prevent filesystem locks on the things we want to hot reload
                     using var dll = AssemblyDefinition.ReadAssembly(plugin.Location, new() { AssemblyResolver = _assemblyResolver });
                     using var ms = new MemoryStream();
                     dll.Write(ms);
                     ms.Seek(0, SeekOrigin.Begin);
-                    loadedAssemblies[plugin.Location] = assembly = loadContext.LoadFromStream(ms);
+                    assembly = loadContext.LoadFromStream(ms);
+                    if (assembly.FullName is null)
+                    {
+                        BloodpebblePlugin.Logger.Log(LogLevel.Error, $"Assembly.FullName is null for plugin [{plugin}]");
+                        continue;
+                    }
+                    loadedAssemblies[plugin.Location] = assembly;
 
+                    _loadContextLookupByPluginGuid[pluginGuid] = loadContext;
                     _assemblyLookupByPluginGuid.Add(pluginGuid, assembly);
-                    _assemblyLookupByFullName.Add(assembly.FullName, assembly);
+                    _assemblyLookupByFullName.Add(assembly.FullName, assembly);                    
                 }
 
                 var bloodpebblePlugin = new PluginInfo
@@ -213,6 +249,29 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
             BloodpebblePlugin.Logger.Log(LogLevel.Warning,
                        $"Couldn't run Module constructor for {assembly.FullName}::{plugin.TypeName}: {e}");
         }
+    }
+
+    // todo: really should find a better way to work around internal bepinex restrictions...
+    // definitely not copying stuff around like this
+    public void UnloadPlugin(BepInEx.PluginInfo plugin)
+    {
+        var pluginInstance = (BasePlugin)plugin.Instance;
+        var assemblyName = pluginInstance.GetType().Assembly.GetName();
+        var pluginName = $"{assemblyName.Name} {assemblyName.Version}";
+        try
+        {
+            bool unloadSuccessful = pluginInstance.Unload();
+            if (!unloadSuccessful)
+            {
+                BloodpebblePlugin.Logger.LogWarning($"Plugin {pluginName} might not be reloadable. (Plugin.Unload returned false)");
+            }
+        }
+        catch (Exception ex)
+        {
+            BloodpebblePlugin.Logger.LogError($"Error unloading plugin {pluginName}: {ex}");
+        }
+        UnloadPluginAssembly(plugin.Metadata.GUID);
+        Plugins.Remove(plugin.Metadata.GUID);
     }
 
     public void UnloadPlugin(PluginInfo plugin)
