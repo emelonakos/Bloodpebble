@@ -13,6 +13,7 @@ using Bloodpebble.ReloadExecution.LoadingStrategySilverBullet;
 using Bloodpebble.ReloadRequestHandling;
 using Bloodpebble.ReloadRequesting;
 using Bloodpebble.Utils;
+using HarmonyLib;
 
 namespace Bloodpebble
 {
@@ -32,6 +33,7 @@ namespace Bloodpebble
         private ReloadViaFileSystemChanges? _reloadViaFileSystemChanges;
         private ReloadViaKeyPress? _reloadViaKeyPress;
         private IPluginLoader? _pluginLoader;
+        private Harmony _harmony;
 
         public BloodpebblePlugin() : base()
         {
@@ -43,6 +45,9 @@ namespace Bloodpebble
 
         public override void Load()
         {
+            _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
+            _harmony.PatchAll(System.Reflection.Assembly.GetExecutingAssembly());
+
             if (VWorld.IsServer)
             {
                 Hooks.Chat.Initialize();
@@ -66,6 +71,7 @@ namespace Bloodpebble
             {
                 Hooks.Chat.Uninitialize();
             }
+            _harmony?.UnpatchSelf();
             return true;
         }
 

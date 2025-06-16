@@ -66,20 +66,20 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
                 ms.Seek(0, SeekOrigin.Begin);
                 assembly = context.LoadFromStream(ms);
 
-                var bloodpebblePlugin = new PluginInfo
-                {
-                    Metadata = plugin.Metadata,
-                    Processes = plugin.Processes,
-                    Dependencies = plugin.Dependencies,
-                    Incompatibilities = plugin.Incompatibilities,
-                    Location = plugin.Location,
-                    Instance = plugin.Instance,
-                    TypeName = plugin.TypeName,
-                };
+                var bloodpebblePlugin = new BloodpebblePluginInfo(
+                    metadata: plugin.Metadata,
+                    processes: plugin.Processes,
+                    dependencies: plugin.Dependencies,
+                    incompatibilities: plugin.Incompatibilities,
+                    location: plugin.Location,
+                    instance: plugin.Instance,
+                    typeName: plugin.TypeName
+                );
                 Plugins[plugin.Metadata.GUID] = bloodpebblePlugin;
                 TryRunModuleCtor(plugin, assembly);
 
-                bloodpebblePlugin.Instance = base.LoadPlugin(plugin, assembly);
+                var pluginInstance = LoadPlugin(plugin, assembly);
+                bloodpebblePlugin.SetInstance(pluginInstance);
                 return bloodpebblePlugin;
             }
             catch (Exception ex)

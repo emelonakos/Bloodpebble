@@ -169,16 +169,15 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
                     _assemblyLookupByFullName.Add(assembly.FullName, assembly);                    
                 }
 
-                var bloodpebblePlugin = new PluginInfo
-                {
-                    Metadata = plugin.Metadata,
-                    Processes = plugin.Processes,
-                    Dependencies = plugin.Dependencies,
-                    Incompatibilities = plugin.Incompatibilities,
-                    Location = plugin.Location,
-                    Instance = plugin.Instance,
-                    TypeName = plugin.TypeName,
-                };
+                var bloodpebblePlugin = new BloodpebblePluginInfo(
+                    metadata: plugin.Metadata,
+                    processes: plugin.Processes,
+                    dependencies: plugin.Dependencies,
+                    incompatibilities: plugin.Incompatibilities,
+                    location: plugin.Location,
+                    instance: plugin.Instance,
+                    typeName: plugin.TypeName
+                );
                 Plugins[plugin.Metadata.GUID] = bloodpebblePlugin;
                 TryRunModuleCtor(plugin, assembly);
 
@@ -189,7 +188,8 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
 
                 BloodpebblePlugin.Logger.Log(LogLevel.Info, $"{assembly.GetName().Name} metadata indicates reloadable: {doesMetadataIndicateUnloadable}");
 
-                bloodpebblePlugin.Instance = LoadPlugin(plugin, assembly);
+                var pluginInstance = LoadPlugin(plugin, assembly);
+                bloodpebblePlugin.SetInstance(pluginInstance);
                 loadedPlugins.Add(bloodpebblePlugin);
 
                 // PluginLoaded?.Invoke(bloodpebblePlugin);
@@ -249,29 +249,6 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
             BloodpebblePlugin.Logger.Log(LogLevel.Warning,
                        $"Couldn't run Module constructor for {assembly.FullName}::{plugin.TypeName}: {e}");
         }
-    }
-
-    // todo: really should find a better way to work around internal bepinex restrictions...
-    // definitely not copying stuff around like this
-    public void UnloadPlugin(BepInEx.PluginInfo plugin)
-    {
-        var pluginInstance = (BasePlugin)plugin.Instance;
-        var assemblyName = pluginInstance.GetType().Assembly.GetName();
-        var pluginName = $"{assemblyName.Name} {assemblyName.Version}";
-        try
-        {
-            bool unloadSuccessful = pluginInstance.Unload();
-            if (!unloadSuccessful)
-            {
-                BloodpebblePlugin.Logger.LogWarning($"Plugin {pluginName} might not be reloadable. (Plugin.Unload returned false)");
-            }
-        }
-        catch (Exception ex)
-        {
-            BloodpebblePlugin.Logger.LogError($"Error unloading plugin {pluginName}: {ex}");
-        }
-        UnloadPluginAssembly(plugin.Metadata.GUID);
-        Plugins.Remove(plugin.Metadata.GUID);
     }
 
     public void UnloadPlugin(PluginInfo plugin)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using ProjectM;
 

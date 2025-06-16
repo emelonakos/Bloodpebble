@@ -129,16 +129,15 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
                     loadedAssemblies[plugin.Location] = assembly = _assemblyLoadContext.LoadFromStream(ms);
                 }
 
-                var bloodpebblePlugin = new PluginInfo
-                {
-                    Metadata = plugin.Metadata,
-                    Processes = plugin.Processes,
-                    Dependencies = plugin.Dependencies,
-                    Incompatibilities = plugin.Incompatibilities,
-                    Location = plugin.Location,
-                    Instance = plugin.Instance,
-                    TypeName = plugin.TypeName,
-                };
+                var bloodpebblePlugin = new BloodpebblePluginInfo(
+                    metadata: plugin.Metadata,
+                    processes: plugin.Processes,
+                    dependencies: plugin.Dependencies,
+                    incompatibilities: plugin.Incompatibilities,
+                    location: plugin.Location,
+                    instance: plugin.Instance,
+                    typeName: plugin.TypeName
+                );
                 Plugins[plugin.Metadata.GUID] = bloodpebblePlugin;
                 TryRunModuleCtor(plugin, assembly);
 
@@ -149,7 +148,8 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
 
                 BloodpebblePlugin.Logger.Log(LogLevel.Info, $"{assembly.GetName().Name} metadata indicates reloadable: {doesMetadataIndicateUnloadable}");
 
-                bloodpebblePlugin.Instance = LoadPlugin(plugin, assembly);
+                var pluginInstance = LoadPlugin(plugin, assembly);
+                bloodpebblePlugin.SetInstance(pluginInstance);
                 loadedPlugins.Add(bloodpebblePlugin);
 
                 // PluginLoaded?.Invoke(bloodpebblePlugin);
