@@ -19,11 +19,6 @@ interface IPluginLoader : ITriggersPluginLoaderEvents
     public IList<PluginInfo> ReloadGiven(IEnumerable<string> pluginGUIDs);
 
     /// <summary>
-    ///     (Re)load the given plugin. other plugins (e.g. dependents) can also be reloaded.
-    /// </summary>
-    public bool TryReloadPlugin(string guid, [NotNullWhen(true)] out PluginInfo? freshPlugin);
-
-    /// <summary>
     ///     Unload all loaded plugins.
     /// </summary>
     public void UnloadAll();

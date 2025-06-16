@@ -136,12 +136,4 @@ internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
         return discoveredPlugins.Where(p => pluginGuidsToLoad.Contains(p.Metadata.GUID)).ToList();
     }
 
-    // todo: can we get rid of this?
-    public bool TryReloadPlugin(string guid, [NotNullWhen(true)] out PluginInfo? freshPlugin)
-    {
-        var loadedPlugins = ReloadAll();
-        freshPlugin = loadedPlugins.FirstOrDefault(p => p?.Metadata.GUID == guid, null);
-        return freshPlugin is not null;
-    }
-
 }

@@ -134,7 +134,7 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
             BloodpebblePlugin.Logger.LogInfo("All reloadable plugins have been unloaded.");
         }
 
-        public bool TryReloadPlugin(string guid, [NotNullWhen(true)] out PluginInfo? freshPlugin)
+        private bool TryReloadPlugin(string guid, [NotNullWhen(true)] out PluginInfo? freshPlugin)
         {
             freshPlugin = null;
             if (!_pluginToContextMap.TryGetValue(guid, out var contextToUnload))

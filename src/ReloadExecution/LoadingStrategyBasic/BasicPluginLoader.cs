@@ -43,13 +43,6 @@ class BasicPluginLoader : BasePluginLoader, IPluginLoader
         return ReloadAll();
     }
 
-    public bool TryReloadPlugin(string guid, [NotNullWhen(true)] out PluginInfo? freshPlugin)
-    {
-        var loadedPlugins = ReloadAll();
-        freshPlugin = loadedPlugins.FirstOrDefault(p => p?.Metadata.GUID == guid, null);
-        return freshPlugin is not null;
-    }
-
     public void UnloadAll()
     {
         for (int i = _plugins.Count - 1; i >= 0; i--)
