@@ -68,11 +68,6 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
     /// <returns>List of plugins to load in the correct load order.</returns>
     public IEnumerable<BepInEx.PluginInfo> ModifyLoadOrder(IEnumerable<BepInEx.PluginInfo> plugins)
     {
-        if (plugins is null)
-        {
-            // todo: remove
-            BloodpebblePlugin.Logger.LogWarning("1. plugins is null");
-        }
         return base.ModifyLoadOrder(plugins.ToList());
     }
 

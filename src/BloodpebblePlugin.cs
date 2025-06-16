@@ -33,7 +33,7 @@ namespace Bloodpebble
         private ReloadViaFileSystemChanges? _reloadViaFileSystemChanges;
         private ReloadViaKeyPress? _reloadViaKeyPress;
         private IPluginLoader? _pluginLoader;
-        private Harmony _harmony;
+        private Harmony? _harmony;
 
         public BloodpebblePlugin() : base()
         {
@@ -82,18 +82,19 @@ namespace Bloodpebble
             IPluginLoader pluginLoader;
             switch (cfg.LoadingStrategy.Value.ToLowerInvariant())
             {
-                case "islands":
+                case "basic_deprecated":
+                    pluginLoader = new BasicPluginLoader(loaderConfig);
+                    break;
+
+                case "islands_deprecated":
                     pluginLoader = new IslandsPluginLoader(loaderConfig);
                     break;
 
+                default: // default to silverbullet
                 case "silverbullet":
                     pluginLoader = new SilverBulletPluginLoader(loaderConfig);
                     break;
-
-                default: // default to basic
-                case "basic":
-                    pluginLoader = new BasicPluginLoader(loaderConfig);
-                    break;
+                
             }
             _eventLogger.Subscribe(pluginLoader);
             _pluginLoader = pluginLoader;

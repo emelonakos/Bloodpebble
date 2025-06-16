@@ -146,7 +146,7 @@ internal class DependencyGraph
         sb.AppendLine("===========================================");
         sb.AppendLine();
 
-        sb.AppendLine("VertexIds ----------------------------");
+        sb.AppendLine("VertexIds ---------------------------------");
         if (!AddedVertexIds.Any())
         {
             sb.AppendLine("  (empty)");
