@@ -1,6 +1,7 @@
 
 using Bloodpebble.ReloadRequesting;
 using ScarletRCON.Shared;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -26,8 +27,31 @@ internal class ReloadViaRCON : BaseReloadRequestor
     [RconCommandCategory("Server Administration")]
     public static class RconCommands
     {
-        [RconCommand("reloadplugins", "Reloads all plugins in the BloodpebblePlugins folder")]
-        public async static Task<string> ReloadAllAsync()
+        [RconCommand("reloadplugins", "Reloads all plugins in the BloodpebblePlugins folder", "reloadplugins [hard]")]
+        public async static Task<string> ReloadAllAsync(string p1)
+        {
+            if (p1.ToLowerInvariant().Equals("hard"))
+            {
+                return await ReloadHard();
+            }
+            else
+            {
+                return await ReloadSoft();
+            }           
+        }
+
+        private static async Task<string> ReloadSoft()
+        {
+            if (Instance is null)
+            {
+                return "Error: missing ReloadViaRCON instance";
+            }
+            var result = await Instance.RequestSoftReloadAsync();
+            var pluginNames = result.PluginsReloaded.Select(p => p.Metadata.Name);
+            return DescribeResult(result.Status, pluginNames);
+        }
+
+        private static async Task<string> ReloadHard()
         {
             if (Instance is null)
             {
@@ -35,13 +59,17 @@ internal class ReloadViaRCON : BaseReloadRequestor
             }
             var result = await Instance.RequestFullReloadAsync();
             var pluginNames = result.PluginsReloaded.Select(p => p.Metadata.Name);
+            return DescribeResult(result.Status, pluginNames);
+        }
 
-            switch (result.Status)
+        private static string DescribeResult(ReloadResultStatus status, IEnumerable<string> loadedPluginNames)
+        {
+             switch (status)
             {
                 case ReloadResultStatus.Success:
-                    return $"Reloaded all plugins: {string.Join(", ", pluginNames)}";
+                    return $"Reloaded all plugins: {string.Join(", ", loadedPluginNames)}";
                 case ReloadResultStatus.PartialSuccess:
-                    return $"Reloaded only some plugins: {string.Join(", ", pluginNames)}";
+                    return $"Reloaded only some plugins: {string.Join(", ", loadedPluginNames)}";
                 default: // default to Faulted
                 case ReloadResultStatus.Faulted:
                     return "Error: An exception occurred while attempting to reload. Check logs for details.";

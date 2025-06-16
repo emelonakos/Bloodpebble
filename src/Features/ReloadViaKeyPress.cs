@@ -24,7 +24,14 @@ internal class ReloadViaKeyPress : BaseReloadRequestor
     {
         if (UnityEngine.Input.GetKeyDown(_reloadKeyCode))
         {
-            RequestFullReloadAsync();
+            if (Input.GetKey(KeyCode.LeftControl))
+            {
+                RequestFullReloadAsync();
+            }
+            else
+            {
+                RequestSoftReloadAsync();
+            }
         }
     }
 

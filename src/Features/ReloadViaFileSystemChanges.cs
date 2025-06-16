@@ -58,7 +58,7 @@ internal class ReloadViaFileSystemChanges : BaseReloadRequestor
         if (autoReloadTimer <= .0f)
         {
             _isPendingAutoReload = false;
-            RequestFullReloadAsync();
+            RequestSoftReloadAsync();
         }
     }
 

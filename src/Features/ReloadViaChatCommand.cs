@@ -2,6 +2,8 @@ using System.Linq;
 using Bloodpebble.Hooks;
 using Bloodpebble.Extensions;
 using Bloodpebble.ReloadRequesting;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Bloodpebble.Features;
 
@@ -33,7 +35,7 @@ internal class ReloadViaChatCommand : BaseReloadRequestor
 
         if (command == _reloadCommand)
         {
-            ChatCommandReloadAllAsync(ev);
+            ChatCommandReloadAllAsync(ev, msgParts);
         }
         else if (command == $"{_reloadCommand}one")
         {
@@ -41,19 +43,40 @@ internal class ReloadViaChatCommand : BaseReloadRequestor
         }
     }
 
-    private async void ChatCommandReloadAllAsync(VChatEvent ev)
+    private async void ChatCommandReloadAllAsync(VChatEvent ev, string[] msgParts)
     {
-        var loadedPlugins = (await RequestFullReloadAsync()).PluginsReloaded;
-        if (!loadedPlugins.Any())
+        IEnumerable<string> loadedPluginNames;
+
+        if (msgParts.Length >= 2 && msgParts[2].ToLowerInvariant().Equals("hard"))
+        {
+            loadedPluginNames = await ReloadHard();
+        }
+        else
+        {
+            loadedPluginNames = await ReloadSoft();
+        }
+
+        if (!loadedPluginNames.Any())
         {
             ev.User.SendSystemMessage($"Did not reload any plugins because no reloadable plugins were found.");
         }
         else
         {
-            var pluginNames = loadedPlugins.Select(plugin => plugin.Metadata.Name);
-            ev.User.SendSystemMessage($"Reloaded {string.Join(", ", pluginNames)}. See console for details.");
+            ev.User.SendSystemMessage($"Reloaded {string.Join(", ", loadedPluginNames)}. See console for details.");
         }
     }
+
+    private async Task<IEnumerable<string>> ReloadSoft()
+    {
+        var result = await RequestSoftReloadAsync();
+        return result.PluginsReloaded.Select(plugin => plugin.Metadata.Name);
+    }
+
+    private async Task<IEnumerable<string>> ReloadHard()
+    {
+        var result = await RequestFullReloadAsync();
+        return result.PluginsReloaded.Select(plugin => plugin.Metadata.Name);
+    }    
 
     private async void ChatCommandReloadOneAsync(VChatEvent ev, string[] msgParts)
     {
