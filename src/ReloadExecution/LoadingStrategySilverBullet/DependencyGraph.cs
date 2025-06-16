@@ -176,7 +176,7 @@ internal class DependencyGraph
         }
         sb.AppendLine();
 
-        sb.AppendLine("DescendentsLookup --------------------------");
+        sb.AppendLine("DescendentsLookup -------------------------");
         if (!DescendentsLookup.Any())
         {
             sb.AppendLine("  (empty)");
@@ -195,7 +195,7 @@ internal class DependencyGraph
         }
         sb.AppendLine();
 
-        sb.AppendLine("AncestorsLookup ----------------------------");
+        sb.AppendLine("AncestorsLookup ---------------------------");
         if (!AncestorsLookup.Any())
         {
             sb.AppendLine("  (empty)");
