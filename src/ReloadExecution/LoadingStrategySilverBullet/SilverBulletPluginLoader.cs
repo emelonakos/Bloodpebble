@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Text;
 using BepInEx;
 using BepInEx.Unity.IL2CPP;
 
 namespace Bloodpebble.ReloadExecution.LoadingStrategySilverBullet;
+
+// todo: optimize things. too many duplicate operations happening across methods
 
 /// <summary>
 ///     Each plugin has its own custom AssemblyLoadContext, with resolution to pre-loaded assemblies in other collectible contexts.
@@ -15,6 +17,7 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategySilverBullet;
 internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
 {
     private Dictionary<string, PluginInfo> _reloadablePlugins = new();
+    private Dictionary<string, DateTime> _lastWriteTimes = new();
     private ModifiedBepInExChainloader _bepinexChainloader = new();
     private PluginLoaderConfig _config;
 
@@ -44,6 +47,7 @@ internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
         foreach (var plugin in loadedPlugins)
         {
             _reloadablePlugins.Add(plugin.Metadata.GUID, plugin);
+            UpdateLastWriteTime(plugin);
 
             var dependencyGuids = plugin.Dependencies.Select(d => d.DependencyGUID).ToHashSet();
             _dependencyGraph.AddVertex(plugin.Metadata.GUID, dependencyGuids);
@@ -110,13 +114,22 @@ internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
         foreach (var plugin in loadedPlugins)
         {
             _reloadablePlugins.Add(plugin.Metadata.GUID, plugin);
+            UpdateLastWriteTime(plugin);
 
             var dependencyGuids = plugin.Dependencies.Select(d => d.DependencyGUID).ToHashSet();
             _dependencyGraph.AddVertex(plugin.Metadata.GUID, dependencyGuids);
         }
 
         var pluginGuidsLoaded = loadedPlugins.Select(p => p.Metadata.GUID);
-        BloodpebblePlugin.Logger.LogDebug($"Loaded plugin(s): {string.Join(", ", pluginGuidsLoaded)}. \nResulting graph:\n{_dependencyGraph}");
+        if (pluginGuidsLoaded.Any())
+        {
+            BloodpebblePlugin.Logger.LogDebug($"Loaded plugin(s): {string.Join(", ", pluginGuidsLoaded)}. \nResulting graph:\n{_dependencyGraph}");
+        }
+        else
+        {
+            BloodpebblePlugin.Logger.LogDebug($"Found {pluginsToLoad.Count()} fresh plugin(s), but couldn't load any of them.");
+        }
+        
         return loadedPlugins;
     }
 
@@ -135,13 +148,64 @@ internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
         return discoveredPlugins.Where(p => pluginGuidsToLoad.Contains(p.Metadata.GUID)).ToList();
     }
 
+    private void UpdateLastWriteTime(PluginInfo plugin)
+    {
+        _lastWriteTimes[plugin.Metadata.GUID] = File.GetLastWriteTime(plugin.Location);
+    }
+
+    private bool IsDirty(PluginInfo plugin)
+    {
+        if (!File.Exists(plugin.Location))
+        {
+            return true;
+        }
+        if (_lastWriteTimes.TryGetValue(plugin.Metadata.GUID, out var cachedLastWriteTime))
+        {
+            try
+            {
+                return cachedLastWriteTime < File.GetLastWriteTime(plugin.Location);
+            }
+            catch (Exception ex)
+            {
+                BloodpebblePlugin.Logger.LogError(ex);
+            }
+        }
+        return true;
+    }
+
+    private bool IsLoaded(PluginInfo plugin)
+    {
+        return _reloadablePlugins.ContainsKey(plugin.Metadata.GUID);
+    }
+
     public IList<PluginInfo> ReloadChanges()
     {
-        // todo: implement
-        UnloadAll();
-        var loadedPlugins = LoadAll();
+        // unload dirty plugins and anything depending on them
+
+        var dirtyPluginGuids = _reloadablePlugins.Values
+            .Where(IsDirty)
+            .Select(p => p.Metadata.GUID);
+
+        var pluginGuidsToUnload = _dependencyGraph.FindAllVertexesToUnload(dirtyPluginGuids.ToHashSet());
+        UnloadGiven(pluginGuidsToUnload);
+
+        // load any discovered plugins that aren't already loaded
+
+        var allDiscoveredPlugins = _bepinexChainloader.DiscoverPluginsFrom(_config.PluginsPath);
+
+        var pluginGuidsToLoad = allDiscoveredPlugins
+            .Where(p => !IsLoaded(p))
+            .Select(p => p.Metadata.GUID);
+
+        if (!pluginGuidsToLoad.Any())
+        {
+            BloodpebblePlugin.Logger.LogDebug($"Did not find any plugin changes to load.");
+            return [];
+        }
+
+        var loadedPlugins = LoadGiven(pluginGuidsToLoad);
         // todo: trigger
         return loadedPlugins;
     }
-    
+
 }
