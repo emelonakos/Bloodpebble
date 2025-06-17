@@ -92,7 +92,7 @@ namespace Bloodpebble
 
                 default: // default to silverbullet
                 case "silverbullet":
-                    pluginLoader = new SilverBulletPluginLoader(loaderConfig);
+                    pluginLoader = new SilverBulletPluginLoader(loaderConfig, Log);
                     break;
                 
             }
