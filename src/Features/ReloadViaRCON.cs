@@ -63,12 +63,13 @@ internal class ReloadViaRCON : BaseReloadRequestor
 
         private static string DescribeResult(ReloadResultStatus status, IEnumerable<string> loadedPluginNames)
         {
-             switch (status)
+            var joinedPluginNames = string.Join(", ", loadedPluginNames);
+            switch (status)
             {
                 case ReloadResultStatus.Success:
-                    return $"Reloaded all plugins: {string.Join(", ", loadedPluginNames)}";
+                    return loadedPluginNames.Any() ? $"Reloaded plugins: {joinedPluginNames}" : "Nothing to reload";
                 case ReloadResultStatus.PartialSuccess:
-                    return $"Reloaded only some plugins: {string.Join(", ", loadedPluginNames)}";
+                    return loadedPluginNames.Any() ? $"Reloaded only some plugins: {joinedPluginNames}" : "Could not reload anything";
                 default: // default to Faulted
                 case ReloadResultStatus.Faulted:
                     return "Error: An exception occurred while attempting to reload. Check logs for details.";

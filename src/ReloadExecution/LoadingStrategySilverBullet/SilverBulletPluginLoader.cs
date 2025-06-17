@@ -32,15 +32,16 @@ internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
 
     public IList<PluginInfo> ReloadAll()
     {
-        UnloadAll();
+        var unloadedPluginGuids = UnloadAll();
         var loadedPlugins = LoadAll();
-        OnReloadedAllPlugins(loadedPlugins);
+        OnReloadedPlugins(loadedPlugins, unloadedPluginGuids);
         return loadedPlugins;
     }
 
-    public void UnloadAll()
+    public IEnumerable<string> UnloadAll()
     {
-        UnloadGiven(_reloadablePlugins.Keys);
+        var pluginGuidsToUnload = _reloadablePlugins.Keys;
+        return UnloadGiven(pluginGuidsToUnload);;
     }
 
     private IList<PluginInfo> LoadAll()
@@ -50,24 +51,25 @@ internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
         ProcessFreshlyLoadedPlugins(loadedPlugins);
 
         var pluginGuidsLoaded = loadedPlugins.Select(p => p.Metadata.GUID);
-        BloodpebblePlugin.Logger.LogDebug($"Loaded plugin(s): {string.Join(", ", pluginGuidsLoaded)}. \nResulting graph:\n{_dependencyGraph}");
+        Log.LogDebug($"Loaded plugin(s): {string.Join(", ", pluginGuidsLoaded)}. \nResulting graph:\n{_dependencyGraph}");
         return loadedPlugins;
     }
 
     public IList<PluginInfo> ReloadGiven(IEnumerable<string> pluginGUIDs)
     {
         var unloadedPluginGuids = UnloadGivenAndDependents(pluginGUIDs);
-        return LoadGivenAndDependencies(unloadedPluginGuids);
+        var loadedPlugins = LoadGivenAndDependencies(unloadedPluginGuids);
+        OnReloadedPlugins(loadedPlugins, unloadedPluginGuids);
+        return loadedPlugins;
     }
 
     private IEnumerable<string> UnloadGivenAndDependents(IEnumerable<string> pluginGUIDs)
     {
         var pluginGuidsToUnload = _dependencyGraph.FindAllVertexesToUnload(pluginGUIDs.ToHashSet());
-        UnloadGiven(pluginGuidsToUnload);
-        return pluginGuidsToUnload;
+        return UnloadGiven(pluginGuidsToUnload);
     }
 
-    private void UnloadGiven(IEnumerable<string> pluginGUIDs)
+    private IEnumerable<string> UnloadGiven(IEnumerable<string> pluginGUIDs)
     {
         var pluginsToUnload = _reloadablePlugins.Values.Where(p => pluginGUIDs.Contains(p.Metadata.GUID));
         _bepinexChainloader.ModifyUnloadOrder(pluginsToUnload);
@@ -80,16 +82,23 @@ internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
                 sb.Append($" [{string.Join(", ", pluginGUIDs)}] requested, but not currently loaded.");
             }
             Log.LogDebug(sb.ToString());
-            return;
+            return [];
         }
 
+        var unloadedPluginGuids = new List<string>();
         foreach (var plugin in pluginsToUnload)
         {
-            _dependencyGraph.RemoveVertex(plugin.Metadata.GUID);
+            var pluginGuid = plugin.Metadata.GUID;
+            _dependencyGraph.RemoveVertex(pluginGuid);
             _bepinexChainloader.UnloadPlugin(plugin);
-            _reloadablePlugins.Remove(plugin.Metadata.GUID);
+            var removed = _reloadablePlugins.Remove(pluginGuid);
+            if (removed)
+            {
+                unloadedPluginGuids.Add(pluginGuid);
+            }
         }
         Log.LogDebug($"Unloaded plugin(s): {string.Join(", ", pluginGUIDs)}. \nResulting graph:\n{_dependencyGraph}");
+        return unloadedPluginGuids;
     }
 
     private IList<PluginInfo> LoadGivenAndDependencies(IEnumerable<string> pluginGUIDs)
@@ -191,18 +200,20 @@ internal class SilverBulletPluginLoader : BasePluginLoader, IPluginLoader
             .Where(IsPluginDirty)
             .Select(p => p.Metadata.GUID);
 
-        UnloadGivenAndDependents(dirtyPluginGuids);
+        var unloadedPluginGuids = UnloadGivenAndDependents(dirtyPluginGuids);
 
         var pluginsToLoad = _bepinexChainloader.DiscoverPluginsFrom(_config.PluginsPath)
             .Where(IsNotPluginLoaded);
 
         if (!pluginsToLoad.Any())
         {
-            Log.LogDebug($"Did not find any plugin changes to load.");
+            OnReloadedPlugins([], unloadedPluginGuids);
             return [];
         }
 
-        return LoadGiven(pluginsToLoad);
+        var loadedPlugins = LoadGiven(pluginsToLoad);
+        OnReloadedPlugins(loadedPlugins, unloadedPluginGuids);
+        return loadedPlugins;
     }
 
 }

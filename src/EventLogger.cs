@@ -24,7 +24,7 @@ internal class EventLogger(ManualLogSource Log)
     public void Subscribe(IPluginLoader pluginLoader)
     {
         _pluginLoaderSubscriptions.Add(pluginLoader);
-        pluginLoader.ReloadedAllPlugins += HandleReloadedAllPlugins;
+        pluginLoader.ReloadedPlugins += HandleReloadedPlugins;
     }
 
     public void Unsubscribe()
@@ -39,7 +39,7 @@ internal class EventLogger(ManualLogSource Log)
 
         foreach (var pluginLoader in _pluginLoaderSubscriptions)
         {
-            pluginLoader.ReloadedAllPlugins -= HandleReloadedAllPlugins;
+            pluginLoader.ReloadedPlugins -= HandleReloadedPlugins;
         }
         _pluginLoaderSubscriptions.Clear();
     }
@@ -101,16 +101,32 @@ internal class EventLogger(ManualLogSource Log)
         Log.LogInfo(sb.ToString());
     }
 
-    private void HandleReloadedAllPlugins(object? sender, ReloadedAllPluginsEventArgs e)
+    private void HandleReloadedPlugins(object? sender, ReloadedPluginsEventArgs e)
     {
-        if (e.LoadedPlugins.Count > 0)
-        {
-            var pluginNames = e.LoadedPlugins.Select(plugin => plugin.Metadata.Name);
-            Log.LogInfo($"Reloaded {string.Join(", ", pluginNames)}.");
-        }
-        else
+        if (!e.UnloadedPluginGuids.Any() && !e.LoadedPlugins.Any())
         {
             Log.LogInfo($"Did not reload any plugins.");
+            return;
+        }
+
+        var unloadedGuids = e.UnloadedPluginGuids.ToHashSet();
+        var loadedGuids = e.LoadedPlugins.Select(p => p.Metadata.GUID).ToHashSet();
+
+        var reloadedGuids = unloadedGuids.Intersect(loadedGuids);
+        unloadedGuids = unloadedGuids.Except(reloadedGuids).ToHashSet();
+        loadedGuids = loadedGuids.Except(reloadedGuids).ToHashSet();
+
+        if (unloadedGuids.Any())
+        {
+            Log.LogInfo($"Unloaded {string.Join(", ", unloadedGuids)}.");
+        }
+        if (loadedGuids.Any())
+        {
+            Log.LogInfo($"Loaded {string.Join(", ", loadedGuids)}.");
+        }
+        if (reloadedGuids.Any())
+        {
+            Log.LogInfo($"Reloaded {string.Join(", ", reloadedGuids)}.");
         }
     }
     

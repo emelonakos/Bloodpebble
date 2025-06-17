@@ -10,6 +10,7 @@ namespace Bloodpebble.ReloadExecution.LoadingStategyBasic;
 ///     Loads all plugins into a single AssemblyLoadContext.
 ///     Reloading a plugin reloads all plugins.
 /// </summary>
+[Obsolete("Will be removed once SilverBullet is stable")]
 class BasicPluginLoader : BasePluginLoader, IPluginLoader
 {
     private IList<PluginInfo> _plugins = new List<PluginInfo>();
@@ -23,22 +24,24 @@ class BasicPluginLoader : BasePluginLoader, IPluginLoader
 
     public IList<PluginInfo> ReloadAll()
     {
-        UnloadAll();
+        var unloadedPluginGuids = UnloadAll();
         var loadedPlugins = LoadAll();
-        OnReloadedAllPlugins(loadedPlugins);
+        OnReloadedPlugins(loadedPlugins, unloadedPluginGuids);
         return loadedPlugins;
     }
 
     public IList<PluginInfo> ReloadGiven(IEnumerable<string> pluginGUIDs)
     {
-        UnloadAll();
+        var unloadedPluginGuids = UnloadAll();
         var loadedPlugins = LoadAll();
-        // todo: trigger
+        OnReloadedPlugins(loadedPlugins, unloadedPluginGuids);
         return loadedPlugins;
     }
 
-    public void UnloadAll()
+    public IEnumerable<string> UnloadAll()
     {
+        var pluginGuids = _plugins.Select(p => p.Metadata.GUID).ToList();
+
         for (int i = _plugins.Count - 1; i >= 0; i--)
         {
             var pluginInfo = _plugins[i];
@@ -62,6 +65,7 @@ class BasicPluginLoader : BasePluginLoader, IPluginLoader
             _plugins.RemoveAt(i);
         }
         _bepinexChainloader.UnloadAssemblies();
+        return pluginGuids;
     }
 
     private IList<PluginInfo> LoadAll()
@@ -78,9 +82,9 @@ class BasicPluginLoader : BasePluginLoader, IPluginLoader
 
     public IList<PluginInfo> ReloadChanges()
     {
-        UnloadAll();
+        var unloadedPluginGuids = UnloadAll();
         var loadedPlugins = LoadAll();
-        // todo: trigger
+        OnReloadedPlugins(loadedPlugins, unloadedPluginGuids);
         return loadedPlugins;
     }
 

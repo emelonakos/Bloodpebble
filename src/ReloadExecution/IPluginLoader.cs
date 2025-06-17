@@ -25,17 +25,18 @@ interface IPluginLoader : ITriggersPluginLoaderEvents
     /// <summary>
     ///     Unload all loaded plugins.
     /// </summary>
-    public void UnloadAll();
+    public IEnumerable<string> UnloadAll();
 
 }
 
 interface ITriggersPluginLoaderEvents
 {
-    public event EventHandler<ReloadedAllPluginsEventArgs>? ReloadedAllPlugins;
+    public event EventHandler<ReloadedPluginsEventArgs>? ReloadedPlugins;
 }
 
 
-internal class ReloadedAllPluginsEventArgs(IList<PluginInfo> LoadedPlugins) : EventArgs
+internal class ReloadedPluginsEventArgs(IList<PluginInfo> loadedPlugins, IEnumerable<string> unloadedPluginGuids) : EventArgs
 {
-    internal IList<PluginInfo> LoadedPlugins { get; } = LoadedPlugins;
+    internal IList<PluginInfo> LoadedPlugins { get; } = loadedPlugins;
+    internal IEnumerable<string> UnloadedPluginGuids { get; } = unloadedPluginGuids;
 }

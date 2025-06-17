@@ -14,6 +14,7 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
     ///     Groups plugins into islands. Each island has its own AssemblyLoadContext.
     ///     Reloading a plugin in an island reloads every plugin in that island.
     /// </summary>
+    [Obsolete("Will be removed once SilverBullet is stable")]
     class IslandsPluginLoader : BasePluginLoader, IPluginLoader
     {
         private readonly Dictionary<string, AssemblyLoadContext> _pluginToContextMap = new();
@@ -29,8 +30,9 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
 
         public IList<PluginInfo> ReloadAll()
         {
+            var unloadedPluginGuids = UnloadAll();
             var loadedPlugins = LoadPlugins(_config.PluginsPath);
-            OnReloadedAllPlugins(loadedPlugins);
+            OnReloadedPlugins(loadedPlugins, unloadedPluginGuids);
             return loadedPlugins;
         }
 
@@ -52,9 +54,8 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
             }
         }
 
-        public IList<PluginInfo> LoadPlugins(string pluginsPath)
+        private IList<PluginInfo> LoadPlugins(string pluginsPath)
         {
-            UnloadAll();
             _bepinexChainloader = new ModifiedBepInExChainloader();
 
             var allPluginInfos = _bepinexChainloader.DiscoverAndSortPlugins(pluginsPath);
@@ -108,8 +109,9 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
             return newlyLoaded;
         }
 
-        public void UnloadAll()
+        public IEnumerable<string> UnloadAll()
         {
+            var pluginGuids = _loadedPlugins.Keys.ToList();
             foreach (var pluginInfo in _loadedPlugins.Values)
             {
                 try { (pluginInfo.Instance as BasePlugin)?.Unload(); }
@@ -117,7 +119,7 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
             }
 
             var allContexts = _pluginToContextMap.Values.Distinct().ToList();
-            if (!allContexts.Any()) return;
+            if (!allContexts.Any()) return [];
 
             foreach (var context in allContexts)
             {
@@ -132,6 +134,7 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
             GC.WaitForPendingFinalizers();
 
             BloodpebblePlugin.Logger.LogInfo("All reloadable plugins have been unloaded.");
+            return pluginGuids;
         }
 
         private bool TryReloadPlugin(string guid, [NotNullWhen(true)] out PluginInfo? freshPlugin)
@@ -210,9 +213,9 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategyIslands
 
         public IList<PluginInfo> ReloadChanges()
         {
-            UnloadAll();
+            var unloadedPluginGuids = UnloadAll();
             var loadedPlugins = LoadPlugins(_config.PluginsPath);
-            // todo: trigger
+            OnReloadedPlugins(loadedPlugins, unloadedPluginGuids);
             return loadedPlugins;
         }
 

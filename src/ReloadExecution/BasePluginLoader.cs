@@ -8,11 +8,11 @@ namespace Bloodpebble.ReloadExecution;
 
 internal abstract class BasePluginLoader : ITriggersPluginLoaderEvents
 {
-    public event EventHandler<ReloadedAllPluginsEventArgs>? ReloadedAllPlugins;
+    public event EventHandler<ReloadedPluginsEventArgs>? ReloadedPlugins;
 
-    protected void OnReloadedAllPlugins(IList<PluginInfo> loadedPlugins)
+    protected void OnReloadedPlugins(IList<PluginInfo> loadedPlugins, IEnumerable<string> unloadedPluginGuids)
     {
-        ReloadedAllPlugins?.Invoke(this, new ReloadedAllPluginsEventArgs(loadedPlugins));
+        ReloadedPlugins?.Invoke(this, new ReloadedPluginsEventArgs(loadedPlugins, unloadedPluginGuids));
     }
 
 }
