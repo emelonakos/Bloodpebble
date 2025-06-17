@@ -25,7 +25,7 @@ internal class BloodpebbleConfig
         string loaderDescription = new StringBuilder()
             .AppendLine("Which strategy to use for (re)loading plugins. Possible values:")
             .AppendLine()
-            .AppendLine("SilverBullet -> Robust and fast. Partial reloads only reload what's necessary.")
+            .AppendLine("SilverBullet -> Robust and fast. Only reloads what's necessary.")
             .AppendLine("                Each plugin is put into its own custom loading context and a DAG is used for resolution.")
             .AppendLine("                Handles plugin errors with troubleshooting messages;")
             .AppendLine("                attempts to recover and load every valid plugin.")
