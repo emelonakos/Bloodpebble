@@ -1,3 +1,9 @@
+# 1.4.0
+- Added `SilverBullet` loading strategy which supersedes the `Islands` and `Basic` strategies.
+- Most reloads are now a soft reload; only reloading what's necessary based on file changes.
+- Added `!reload hard` chat command to fully reload everything.
+- Added `bloodpebble.ReloadPluginsHard` RCON command to fully reload everything.
+
 # 1.3.1
 - The initial load of plugins in the BloodpebblePlugins folder now happens AFTER normal BepInEx plugins loaded.
   - This should resolve some issues with dependencies not being found. Interestingly, bloodstone would have had the same problem.
