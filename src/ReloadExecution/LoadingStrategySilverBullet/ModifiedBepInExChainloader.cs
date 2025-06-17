@@ -55,23 +55,51 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
     /// <param name="path">Path from which to search the plugins.</param>
     /// <param name="cacheName">Cache name to use. If null, results are not cached.</param>
     /// <returns>List of discovered plugins and their metadata.</returns>
-    public IList<BepInEx.PluginInfo> DiscoverPluginsFrom(string path)
+    public IList<PluginInfo> DiscoverPluginsFrom(string path)
     {
         return base.DiscoverPluginsFrom(path);
     }
 
     /// <summary>
-    /// Preprocess the plugins and modify the load order.
+    /// Preprocess the plugins and modify the load order. (public bridge to protected method)
     /// </summary>
     /// <remarks>Some plugins may be skipped if they cannot be loaded (wrong metadata, etc).</remarks>
     /// <param name="plugins">Plugins to process.</param>
     /// <returns>List of plugins to load in the correct load order.</returns>
-    public IEnumerable<BepInEx.PluginInfo> ModifyLoadOrder(IEnumerable<BepInEx.PluginInfo> plugins)
+    public IEnumerable<PluginInfo> ModifyLoadOrder(IEnumerable<PluginInfo> plugins)
     {
         return base.ModifyLoadOrder(plugins.ToList());
     }
 
-    public IList<PluginInfo> LoadPlugins(IList<BepInEx.PluginInfo> plugins)
+    /// <summary>
+    /// Modifies the order of given plugins for unloading.
+    /// </summary>
+    /// <param name="plugins">Plugins to process.</param>
+    /// <returns>List of plugins to load in the correct unload order.</returns>
+    public IEnumerable<PluginInfo> ModifyUnloadOrder(IEnumerable<PluginInfo> plugins)
+    {
+        // We use a sorted dictionary to ensure consistent order
+        var dependencyDict = new SortedDictionary<string, IEnumerable<string>>(StringComparer.InvariantCultureIgnoreCase);
+        var pluginsByGuid = new Dictionary<string, PluginInfo>();
+
+        foreach (var plugin in plugins)
+        {
+            // nb: all the extra proccessing from ModifyLoadOrder isn't necessary, because the plugin is assumed to already be loaded
+            pluginsByGuid[plugin.Metadata.GUID] = plugin;
+            dependencyDict[plugin.Metadata.GUID] = plugin.Dependencies.Select(d => d.DependencyGUID);
+        }
+
+        // Sort plugins by their dependencies.
+        // Give missing dependencies no dependencies of their own,
+        // which will cause missing plugins to be first in the resulting list (and then last after reversing).
+        var emptyDependencies = new string[0];
+        var GetDependencies = (string guid) => dependencyDict.GetValueOrDefault(guid) ?? emptyDependencies;
+        var sortedForLoading = Utility.TopologicalSort(dependencyDict.Keys, GetDependencies);
+        var sortedForUnloading = sortedForLoading.Reverse();
+        return sortedForUnloading.Where(pluginsByGuid.ContainsKey).Select(guid => pluginsByGuid[guid]).ToList();
+    }
+
+    public IList<PluginInfo> LoadPlugins(IList<PluginInfo> plugins)
     {
         var sortedPlugins = ModifyLoadOrder(plugins);
 
@@ -161,7 +189,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
 
                     _loadContextLookupByPluginGuid[pluginGuid] = loadContext;
                     _assemblyLookupByPluginGuid.Add(pluginGuid, assembly);
-                    _assemblyLookupByFullName.Add(assembly.FullName, assembly);                    
+                    _assemblyLookupByFullName.Add(assembly.FullName, assembly);
                 }
 
                 var bloodpebblePlugin = new BloodpebblePluginInfo(
@@ -213,7 +241,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
     /// <returns>List of loaded plugin infos.</returns>
     public new IList<PluginInfo> LoadPlugins(params string[] pluginsPaths)
     {
-        var discoveredPlugins = new List<BepInEx.PluginInfo>();
+        var discoveredPlugins = new List<PluginInfo>();
         foreach (var pluginsPath in pluginsPaths)
         {
             discoveredPlugins.AddRange(DiscoverPluginsFrom(pluginsPath));
@@ -231,7 +259,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
 
     }
 
-    protected static void TryRunModuleCtor(BepInEx.PluginInfo plugin, Assembly assembly)
+    protected static void TryRunModuleCtor(PluginInfo plugin, Assembly assembly)
     {
         try
         {
