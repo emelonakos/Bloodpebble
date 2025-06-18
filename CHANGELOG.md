@@ -1,3 +1,6 @@
+# 1.4.1
+- Improved robustness: addressed an issue where a plugin that faulted while being loaded, could not later be reloaded.
+
 # 1.4.0
 - Added `SilverBullet` loading strategy which supersedes the `Islands` and `Basic` strategies.
 - Most reloads are now a soft reload; only reloading what's necessary based on file changes.

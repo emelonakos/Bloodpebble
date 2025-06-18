@@ -221,6 +221,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
             {
                 invalidPlugins.Add(plugin.Metadata.GUID);
                 Plugins.Remove(plugin.Metadata.GUID);
+                UnloadPluginAssembly(plugin.Metadata.GUID);
 
                 BloodpebblePlugin.Logger.Log(LogLevel.Error,
                            $"Error loading [{plugin}]: {(ex is ReflectionTypeLoadException re ? TypeLoader.TypeLoadExceptionToString(re) : ex.ToString())}");
