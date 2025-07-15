@@ -1,3 +1,6 @@
+# 1.4.2
+- Bugfix: Fixed an issue resolving dependencies with mismatched versions.
+
 # 1.4.1
 - Improved robustness: addressed an issue where a plugin that faulted while being loaded, could not later be reloaded.
 

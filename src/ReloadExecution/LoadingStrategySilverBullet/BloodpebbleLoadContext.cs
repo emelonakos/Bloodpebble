@@ -9,26 +9,41 @@ namespace Bloodpebble.ReloadExecution.LoadingStrategySilverBullet;
 internal class BloodpebbleLoadContext : AssemblyLoadContext
 {
     protected static Dictionary<string, Assembly> DefaultAssemblyLookupByFullName = new();
-    private Dictionary<string, Assembly> _bloodpebbleAssemblyLookupByFullName;
+    private Dictionary<string, Assembly> _bloodpebbleAssemblyLookupByPartialName;
 
 
     internal BloodpebbleLoadContext(
         string name,
-        Dictionary<string, Assembly> assemblyLookupByFullName
+        Dictionary<string, Assembly> assemblyLookupByPartialName
     ) : base(name: name, isCollectible: true)
     {
-        _bloodpebbleAssemblyLookupByFullName = assemblyLookupByFullName;
+        _bloodpebbleAssemblyLookupByPartialName = assemblyLookupByPartialName;
     }
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        if (_bloodpebbleAssemblyLookupByFullName.ContainsKey(assemblyName.FullName))
-        {
-            // We can't load an assembly from a different collectible context.
-            // But we CAN return an assembly that's already loaded.
-            return _bloodpebbleAssemblyLookupByFullName[assemblyName.FullName];
-        }
+        // We can't load an assembly from a different collectible context.
+        // But we CAN return an assembly that's already loaded.
+        var assembly = LoadAssembly_PreloadedBloodpebblePlugin(assemblyName);
+        assembly ??= LoadAssembly_NotPloodpebblePlugin(assemblyName);
+        return assembly;
+    }
 
+    private Assembly? LoadAssembly_PreloadedBloodpebblePlugin(AssemblyName assemblyName)
+    {
+        if (assemblyName.Name is null)
+        {
+            return null;
+        }
+        if (_bloodpebbleAssemblyLookupByPartialName.TryGetValue(assemblyName.Name, out var assembly))
+        {
+            return assembly;
+        }
+        return null;
+    }
+
+    private Assembly? LoadAssembly_NotPloodpebblePlugin(AssemblyName assemblyName)
+    {
         if (DefaultAssemblyLookupByFullName.TryGetValue(assemblyName.FullName, out var assembly))
         {
             return assembly;
@@ -37,18 +52,17 @@ internal class BloodpebbleLoadContext : AssemblyLoadContext
         try
         {
             assembly = Default.LoadFromAssemblyName(assemblyName);
+            if (assembly != null)
+            {
+                DefaultAssemblyLookupByFullName.Add(assemblyName.FullName, assembly);
+            }
+            return assembly;
         }
         catch (Exception ex)
         {
             CheckAndLogBadSearchForBloodpebblePlugin(assemblyName, ex);
             throw;
         }
-
-        if (assembly != null)
-        {
-            DefaultAssemblyLookupByFullName.Add(assemblyName.FullName, assembly);
-        }
-        return assembly;
     }
 
     private void CheckAndLogBadSearchForBloodpebblePlugin(AssemblyName assemblyName, Exception ex)
