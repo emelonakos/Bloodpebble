@@ -30,7 +30,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
     private BaseAssemblyResolver _assemblyResolver;
 
     private Dictionary<string, BloodpebbleLoadContext> _loadContextLookupByPluginGuid = new();
-    private Dictionary<string, Assembly> _assemblyLookupByFullName = new();
+    private Dictionary<string, Assembly> _assemblyLookupByPartialName = new();
     private Dictionary<string, Assembly> _assemblyLookupByPluginGuid = new();
 
     public ModifiedBepInExChainloader()
@@ -43,7 +43,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
 
     private BloodpebbleLoadContext CreateNewAssemblyLoadContext(string pluginGuid)
     {
-        return new BloodpebbleLoadContext(name: $"BloodpebbleContext-{pluginGuid}", _assemblyLookupByFullName);
+        return new BloodpebbleLoadContext(name: $"BloodpebbleContext-{pluginGuid}", _assemblyLookupByPartialName);
     }
 
     /// <summary>
@@ -179,17 +179,26 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
                     using var ms = new MemoryStream();
                     dll.Write(ms);
                     ms.Seek(0, SeekOrigin.Begin);
-                    assembly = loadContext.LoadFromStream(ms);
+                    assembly = loadContext.LoadFromStream(ms); 
+
                     if (assembly.FullName is null)
                     {
                         BloodpebblePlugin.Logger.Log(LogLevel.Error, $"Assembly.FullName is null for plugin [{plugin}]");
                         continue;
                     }
+
+                    var partialName = assembly.GetName().Name;
+                    if (partialName is null)
+                    {
+                        BloodpebblePlugin.Logger.Log(LogLevel.Error, $"Assembly.GetName().Name is null for plugin [{plugin}]");
+                        continue;
+                    }
+
                     loadedAssemblies[plugin.Location] = assembly;
 
                     _loadContextLookupByPluginGuid[pluginGuid] = loadContext;
                     _assemblyLookupByPluginGuid.Add(pluginGuid, assembly);
-                    _assemblyLookupByFullName.Add(assembly.FullName, assembly);
+                    _assemblyLookupByPartialName.Add(partialName, assembly);
                 }
 
                 var bloodpebblePlugin = new BloodpebblePluginInfo(
@@ -305,13 +314,14 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
 
         if (_assemblyLookupByPluginGuid.Remove(pluginGuid, out var assembly))
         {
-            if (assembly.FullName is null)
+            var partialName = assembly.GetName().Name;
+            if (partialName is null)
             {
-                BloodpebblePlugin.Logger.LogWarning($"Assembly for {pluginGuid} has no FullName.");
+                BloodpebblePlugin.Logger.LogWarning($"Assembly for {pluginGuid} has no Name.");
             }
             else
             {
-                _assemblyLookupByFullName.Remove(assembly.FullName);
+                _assemblyLookupByPartialName.Remove(partialName);
             }
         }
     }
