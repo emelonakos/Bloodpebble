@@ -6,7 +6,7 @@ namespace Bloodpebble.Utils;
 /// <summary>
 /// Various utilities for interacting with the Unity ECS world.
 /// </summary>
-internal static class VWorld
+public static class VWorld
 {
     private static World? _clientWorld;
     private static World? _serverWorld;

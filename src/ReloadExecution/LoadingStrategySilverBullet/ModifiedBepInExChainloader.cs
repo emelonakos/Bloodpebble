@@ -248,7 +248,7 @@ class ModifiedBepInExChainloader : IL2CPPChainloader
             discoveredPlugins.AddRange(DiscoverPluginsFrom(pluginsPath));
             _assemblyResolver.AddSearchDirectory(pluginsPath);
         }
-
+        
         var loadedPlugins = LoadPlugins(discoveredPlugins);
 
         foreach (var pluginsPath in pluginsPaths)

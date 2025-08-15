@@ -4,6 +4,8 @@ using Bloodpebble.Extensions;
 using Bloodpebble.ReloadRequesting;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using ProjectM;
+using Bloodpebble.Utils;
 
 namespace Bloodpebble.Features;
 
@@ -11,6 +13,7 @@ namespace Bloodpebble.Features;
 internal class ReloadViaChatCommand : BaseReloadRequestor
 {
     private string _reloadCommand;
+    private AdminAuthSystem adminAuthSystem = null;
 
     internal ReloadViaChatCommand(string reloadCommand)
     {
@@ -25,11 +28,15 @@ internal class ReloadViaChatCommand : BaseReloadRequestor
 
     private void HandleChatMessage(VChatEvent ev)
     {
+        if (adminAuthSystem == null)
+        {
+            adminAuthSystem = VWorld.Server.GetExistingSystemManaged<AdminAuthSystem>();
+        }
         var msgParts = ev.Message.Split(' ');
-        var command = msgParts[0];
+        var command = msgParts[0].ToLower();
 
         if (command != _reloadCommand && command != $"{_reloadCommand}one") return;
-        if (!ev.User.IsAdmin) return;
+        if (!ev.User.IsAdmin && !adminAuthSystem._LocalAdminList.Contains(ev.User.PlatformId)) return;
 
         ev.Cancel();
 

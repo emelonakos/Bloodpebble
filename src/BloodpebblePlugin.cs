@@ -30,8 +30,6 @@ namespace Bloodpebble
 
         private IReloadRequestHandler? _reloadRequestHandler;
         private ReloadViaChatCommand? _reloadViaChatCommand;
-        private ReloadViaFileSystemChanges? _reloadViaFileSystemChanges;
-        private ReloadViaKeyPress? _reloadViaKeyPress;
         private IPluginLoader? _pluginLoader;
         private Harmony? _harmony;
 
@@ -54,6 +52,7 @@ namespace Bloodpebble
             }
             Hooks.GameFrame.Initialize();
             InitReloadFeatures();
+
             DoInitialPluginsLoad_After_BepInExLoadedOtherPlugins();
             Logger.LogInfo($"Bloodpebble v{MyPluginInfo.PLUGIN_VERSION} loaded.");
         }
@@ -62,10 +61,7 @@ namespace Bloodpebble
         {
             _eventLogger.Unsubscribe();
             _reloadRequestHandler?.Dispose();
-            ReloadViaRCON.Uninitialize();
-            _reloadViaFileSystemChanges?.Dispose();
             _reloadViaChatCommand?.Dispose();
-            _reloadViaKeyPress?.Dispose();
             Hooks.GameFrame.Initialize();
             if (VWorld.IsServer)
             {
@@ -106,21 +102,6 @@ namespace Bloodpebble
 
             _reloadViaChatCommand = new ReloadViaChatCommand(cfg.ReloadCommand.Value);
             _reloadRequestHandler.Subscribe(_reloadViaChatCommand);
-
-            if (cfg.EnableAutoReload.Value)
-            {
-                _reloadViaFileSystemChanges = new ReloadViaFileSystemChanges(cfg.PluginsFolder.Value, cfg.AutoReloadDelaySeconds.Value);
-                _reloadRequestHandler.Subscribe(_reloadViaFileSystemChanges);
-            }
-
-            if (VWorld.IsClient)
-            {
-                _reloadViaKeyPress = new ReloadViaKeyPress();
-                _reloadRequestHandler.Subscribe(_reloadViaKeyPress);
-            }
-
-            var reloadViaRCON = ReloadViaRCON.Initialize();
-            _reloadRequestHandler.Subscribe(reloadViaRCON);
         }
 
         private void DoInitialPluginsLoad()
