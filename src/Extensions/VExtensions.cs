@@ -1,4 +1,4 @@
-using Bloodpebble.Utils;
+using Bloodpebble.API;
 using ProjectM;
 using ProjectM.Network;
 

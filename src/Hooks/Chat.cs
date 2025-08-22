@@ -4,7 +4,9 @@ using HarmonyLib;
 using ProjectM;
 using ProjectM.Network;
 using Unity.Entities;
-using Bloodpebble.Utils;
+using Bloodpebble.API;
+using System.Threading;
+using System.Collections.Concurrent;
 
 namespace Bloodpebble.Hooks;
 
@@ -47,14 +49,18 @@ public static class Chat
             var fromCharacter = VWorld.Server.EntityManager.GetComponentData<FromCharacter>(entity);
             var ev = new VChatEvent(fromCharacter.User, fromCharacter.Character, chatMessage.MessageText.ToString(), chatMessage.MessageType);
 
-            BloodpebblePlugin.Logger.LogInfo($"[Chat] [{ev.Type}] {ev.User.CharacterName}: {ev.Message}");
-
             try
             {
                 OnChatMessage?.Invoke(ev);
 
-                if (ev.Cancelled)
+                if (!ev.Cancelled)
+                {
+                    BloodpebblePlugin.Logger.LogInfo($"[Chat] [{ev.Type}] {ev.User.CharacterName}: {ev.Message}");
+                }
+                else
+                {
                     VWorld.Server.EntityManager.DestroyEntity(entity);
+                }
             }
             catch (Exception ex)
             {
@@ -62,6 +68,40 @@ public static class Chat
                 BloodpebblePlugin.Logger.LogError(ex);
             }
         }
+    }
+
+    public static int CurrentFrameCount = 0;
+    public static ConcurrentQueue<Action> actionsToExecuteOnMainThread = new ConcurrentQueue<Action>();
+
+    [HarmonyPatch(typeof(VivoxConnectionSystem), nameof(VivoxConnectionSystem.OnUpdate))] //this can be any system that updates each frame
+    public static void Postfix()
+    {
+        CurrentFrameCount++;
+        while (actionsToExecuteOnMainThread.TryDequeue(out Action action))
+        {
+            action?.Invoke();
+        }
+    }
+
+    public static Timer RunActionOnceAfterFrames(Action action, int frameDelay)
+    {
+        int startFrame = CurrentFrameCount;
+        Timer timer = null;
+
+        timer = new Timer(_ =>
+        {
+            if (CurrentFrameCount - startFrame >= frameDelay)
+            {
+                // Enqueue the action to be executed on the main thread
+                actionsToExecuteOnMainThread.Enqueue(() =>
+                {
+                    action.Invoke();  // Execute the action
+                });
+                timer?.Dispose();
+            }
+        }, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(8));
+
+        return timer;
     }
 }
 

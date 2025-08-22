@@ -67,6 +67,7 @@ class BasicPluginLoader : BasePluginLoader, IPluginLoader
         _bepinexChainloader.UnloadAssemblies();
         return pluginGuids;
     }
+<<<<<<< Updated upstream:src/ReloadExecution/LoadingStrategyBasic/BasicPluginLoader.cs
 
     private IList<PluginInfo> LoadAll()
     {
@@ -88,4 +89,6 @@ class BasicPluginLoader : BasePluginLoader, IPluginLoader
         return loadedPlugins;
     }
 
+=======
+>>>>>>> Stashed changes:Reloading/BloodpebbleChainLoader.cs
 }

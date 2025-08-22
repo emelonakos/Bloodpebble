@@ -34,6 +34,7 @@
   <ItemGroup>
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.1.0" />
   </ItemGroup>
+  
 
   <PropertyGroup>
     <ThunderstoreManifestContent>
@@ -52,6 +53,7 @@
   </PropertyGroup>
 
   <Target Name="ThunderstoreDist" AfterTargets="Publish">
+<<<<<<< Updated upstream
     <PropertyGroup>
       <ThunderstoreName>Bloodpebble</ThunderstoreName>
       <ThunderstoreZipFileName>thunderstore.$(ThunderstoreName).$(Version).zip</ThunderstoreZipFileName>
@@ -64,6 +66,18 @@
     <Copy SourceFiles="CHANGELOG.md" DestinationFolder="dist/temp/thunderstore" />
     <ZipDirectory SourceDirectory="dist/temp/thunderstore" DestinationFile="$(ThunderstoreZipFile)" Overwrite="true"></ZipDirectory>
     <RemoveDir Directories="dist/temp/" />
+=======
+    <WriteLinesToFile Lines="$(ThunderstoreManifestContent)" File="dist/thunderstore/temp/manifest.json" WriteOnlyWhenDifferent="true" Overwrite="true" />
+    <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="dist/thunderstore/temp" />
+    <Copy SourceFiles="icon.png" DestinationFolder="dist/thunderstore/temp" />
+    <Copy SourceFiles="README.md" DestinationFolder="dist/thunderstore/temp" />
+    <Copy SourceFiles="CHANGELOG.md" DestinationFolder="dist/thunderstore/temp" />
+    <ZipDirectory SourceDirectory="dist/thunderstore/temp" DestinationFile="dist/thunderstore/$(AssemblyName).zip" Overwrite="true"></ZipDirectory>
+    <RemoveDir Directories="dist/thunderstore/temp" />
+  </Target>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy &quot;$(ProjectDir)bin\Debug\net6.0\*Bloodpebble.dll*&quot; &quot;$(DriveLetter)\Program Files (x86)\Steam\steamapps\common\VRisingDedicatedServer\BepInEx\plugins&quot;" />
+>>>>>>> Stashed changes
   </Target>
 
   <Target Name="SingleDllDist" AfterTargets="Publish">
